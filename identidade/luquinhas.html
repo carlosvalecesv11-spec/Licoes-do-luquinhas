@@ -1,0 +1,118 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts/f.css">
+<style>body{margin:0;background:#888}canvas{display:block;margin:10px}</style>
+</head><body>
+<script>
+let ctx; const INK = '#26222f'; const LW = 7;
+</script>
+<script src="common.js"></script>
+<script>
+const P = { yellow: '#ffcc29', sky: '#3aa0ef', deep: '#1d4f91', orange: '#ff6b3d', cream: '#fff8e6', ink: INK };
+const LUQ = { kind: 'kid', skin: '#cf976b', shirt: '#2e2e38', sleeve: '#2e2e38', pants: '#dcc6a4', shorts: true, shoes: '#ffffff', hair: 'wavy', hairColor: '#2a1c16', number: 'L', numberColor: P.yellow };
+
+function mk(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; document.body.appendChild(c); ctx = c.getContext('2d'); return c; }
+function rays(cx, cy, w, h, c1, c2, n = 18) {
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h)); g.addColorStop(0, c1); g.addColorStop(1, c2);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(255,255,255,0.10)';
+  for (let i = 0; i < n; i++) { const a = i * Math.PI * 2 / n; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, 3000, a, a + Math.PI / n); ctx.closePath(); ctx.fill(); }
+}
+function txt(t, x, y, size, fill, rot = 0, sw = 0.22, align = 'center') {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.font = `700 ${size}px Fredoka`; ctx.textAlign = align; ctx.textBaseline = 'middle';
+  if (sw) { ctx.lineWidth = size * sw; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.strokeText(t, 0, size * 0.05); }
+  ctx.fillStyle = fill; ctx.fillText(t, 0, 0); ctx.restore();
+}
+function star(x, y, r, fill, n = 5, rot = 0) {
+  shape(fill, () => { for (let i = 0; i <= n * 2; i++) { const a = i * Math.PI / n - Math.PI / 2 + rot; const rr2 = i % 2 ? r * 0.48 : r; const px = x + Math.cos(a) * rr2, py = y + Math.sin(a) * rr2; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.closePath(); }, 8);
+}
+function logo(x, y, s) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  txt('LIÇÕES DO', 0, -95, 110, '#ffffff', -0.04, 0.22);
+  txt('LUQUINHAS', 0, 40, 165, P.yellow, -0.04, 0.2);
+  star(420, -150, 70, P.orange, 5, 0.2);
+  ctx.restore();
+}
+function cloud(x, y, s) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.beginPath(); ctx.ellipse(0, 0, 70, 40, 0, 0, 7); ctx.ellipse(-60, 14, 50, 30, 0, 0, 7); ctx.ellipse(60, 14, 55, 30, 0, 0, 7); ctx.ellipse(10, -26, 46, 36, 0, 0, 7); ctx.fill(); ctx.restore();
+}
+
+const out = {};
+function drawAll() {
+  // 1) Avatar
+  (function () {
+    const c = mk(1080, 1080);
+    rays(540, 560, 1080, 1080, '#7cc6ff', P.deep, 20);
+    cloud(190, 230, 1.1); cloud(930, 330, 0.8);
+    person({ ...LUQ, x: 540, y: 1560, s: 2.2, expr: 'grin', armL: 0, armR: 2.05, look: 0 });
+    star(880, 190, 95, P.yellow, 5, 0.2);
+    out.avatar = c;
+  })();
+  // 2) Logo transparent
+  (function () { const c = mk(1300, 560); logo(640, 320, 1.15); out.logo = c; })();
+  // 3) Cover template
+  (function () {
+    const c = mk(1080, 1920);
+    rays(470, 1250, 1080, 1920, '#7cc6ff', P.deep, 22);
+    cloud(860, 200, 1.0);
+    shape(P.orange, rr(80, 230, 330, 100, 50), 8); txt('PARTE 1', 245, 282, 64, '#ffffff', 0, 0.12);
+    txt('O MENINO', 470, 470, 150, '#ffffff', -0.03, 0.2);
+    txt('QUE NUNCA', 470, 630, 150, '#ffffff', -0.03, 0.2);
+    txt('DIVIDIA', 470, 790, 150, P.yellow, -0.03, 0.2);
+    shape(P.yellow, rr(130, 900, 680, 110, 55), 8); txt('TEM LIÇÃO NO FINAL', 470, 957, 58, INK, 0, 0);
+    person({ ...LUQ, x: 470, y: 1900, s: 1.45, expr: 'grin', armL: 0, armR: 2.05 });
+    star(800, 1240, 90, P.yellow, 5, 0.2);
+    out.capa = c;
+  })();
+  // 4) Character sheet / guide
+  (function () {
+    const c = mk(1080, 2700);
+    ctx.fillStyle = P.cream; ctx.fillRect(0, 0, 1080, 2700);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 1080, 760); ctx.clip(); rays(540, 380, 1080, 760, '#7cc6ff', P.deep, 22); ctx.restore();
+    logo(520, 330, 1.0);
+    txt('@licoesdoluquinhas', 540, 620, 60, '#ffffff', 0, 0.16);
+    let y = 860;
+    const H2 = t => { txt(t, 80, y, 62, P.deep, 0, 0, 'left'); y += 80; };
+    const p = (t, size = 42, col = INK) => { ctx.font = `600 ${size}px Fredoka`; ctx.fillStyle = col; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(t, 80, y); y += size * 1.35; };
+    H2('MASCOTE: LUQUINHAS');
+    const poses = [{ expr: 'grin', armL: 0, armR: 0 }, { expr: 'shock', armL: 2.75, armR: 2.75 }, { expr: 'grin', armL: 0, armR: 2.9, talk: 0.7 }];
+    const labels = ['sorrisão', 'chocado', 'contando'];
+    poses.forEach((po, i) => {
+      const cx = 200 + i * 340;
+      shape('#e3f2ff', rr(cx - 150, y, 300, 470, 30), 6);
+      person({ ...LUQ, ...po, x: cx, y: y + 420, s: 0.62 });
+      ctx.font = '700 40px Fredoka'; ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.fillText(labels[i], cx, y + 510);
+    });
+    y += 600;
+    p('Camiseta preta com "L", bermuda bege e sorrisão.', 36, '#55506a');
+    y += 30;
+    H2('CORES');
+    const sw = [[P.yellow, 'AMARELO', '#FFCC29'], [P.sky, 'AZUL CÉU', '#3AA0EF'], [P.deep, 'AZUL', '#1D4F91'], [P.orange, 'LARANJA', '#FF6B3D'], [INK, 'CONTORNO', '#26222F']];
+    sw.forEach(([col, nm, hx], i) => {
+      const cx = 80 + i * 190;
+      shape(col, rr(cx, y, 160, 160, 28), 6);
+      ctx.font = '700 28px Fredoka'; ctx.fillStyle = INK; ctx.textAlign = 'left'; ctx.fillText(nm, cx, y + 195); ctx.font = '600 26px Fredoka'; ctx.fillStyle = '#55506a'; ctx.fillText(hx, cx, y + 230);
+    });
+    y += 300;
+    H2('FONTE');
+    txt('Fredoka Bold', 80, y + 10, 70, P.yellow, 0, 0.2, 'left'); y += 110;
+    p('Legenda: branca, palavra atual em amarelo, contorno grosso.', 36, '#55506a');
+    y += 30;
+    H2('BIO');
+    shape('#ffffff', rr(50, y - 20, 980, 210, 26), 6); y += 45;
+    p('Histórias com lição de vida e final surpresa', 42); p('Nova história todo dia às 19h', 42); p('Feito com amor pro meu irmão', 42);
+    y += 60;
+    H2('HASHTAGS');
+    p('#historia #licaodevida #plottwist #animacao #fy', 36);
+    y += 30;
+    H2('REGRAS DO CANAL');
+    ['Gancho forte nos 2 primeiros segundos', 'Todo vídeo com mais de 1 minuto', 'Plot twist + lição no final', 'Termina com pergunta pro público', 'Capa: título grande + Luquinhas'].forEach(r => p('•  ' + r, 40));
+    out.guia = c;
+  })();
+}
+window.exportAll = () => Object.fromEntries(Object.entries(out).map(([k, c]) => [k, c.toDataURL('image/png')]));
+window.ready = document.fonts.load('700 92px Fredoka').then(() => document.fonts.load('600 40px Fredoka')).then(() => { drawAll(); return true; });
+</script>
+</body></html>

@@ -1,0 +1,289 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts/f.css">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+const W = 1080, H = 1920, DUR = 73;
+const cv = document.getElementById('c');
+let ctx = cv.getContext('2d');
+const INK = '#26222f'; const LW = 7;
+</script>
+<script src="common.js"></script>
+<script src="bgs.js"></script>
+<script>
+const Y = '#ffcc29', BLUE = '#2f7bff';
+const LUQ = { kind: 'kid', skin: '#cf976b', shirt: '#2e2e38', sleeve: '#2e2e38', pants: '#dcc6a4', shorts: true, shoes: '#ffffff', hair: 'wavy', hairColor: '#2a1c16', number: 'L', numberColor: Y };
+const MOM = { kind: 'adult', skin: '#d9a47a', shirt: '#4fb3a9', pants: '#d9a47a', shoes: '#2f6b4f', hair: 'long', hairColor: '#2a1c16', dress: true };
+const MAN = { kind: 'adult', skin: '#f0c9a4', shirt: '#e86f4f', pants: '#3a5fa8', shoes: '#3a2a22', hair: 'short', hairColor: '#7a4a2a' };
+const VIZ = { kind: 'adult', skin: '#8a5a3c', shirt: '#7cc4b8', pants: '#5a4a7a', shoes: '#3a2a22', hair: 'bald', hairColor: '#1f1714' };
+const GIRL = { kind: 'kid', skin: '#f0c9a4', shirt: '#ff7fb0', sleeve: '#ff7fb0', pants: '#7b4dd6', shoes: '#ffffff', hair: 'long', hairColor: '#c2602a' };
+const MAYOR = { kind: 'adult', skin: '#e9b48c', shirt: '#3b3f58', pants: '#2b2b38', shoes: '#1a1a22', hair: 'short', hairColor: '#9a9aa8', tophat: true };
+
+const NAMES = { luq: ['LUQUINHAS', '#1d4f91'], mom: ['MÃE', '#2f8f86'], man: ['MOÇO', '#e86f4f'], viz: ['VIZINHO', '#3a9e93'], girl: ['MENINA', '#e0569a'], mayor: ['PREFEITO', '#3b3f58'] };
+
+const LINES = [
+  [0.3, 4.2, 'luq', 'Nesse lugar, quem mente fica com o nariz AZUL.'],
+  [4.2, 6.6, 'man', 'Tô chegando, 5 minutinhos!'],
+  [6.8, 9.6, 'nar', 'Por isso aqui ninguém mente.'],
+
+  [10.0, 12.6, 'mom', 'Filho, escovou os dentes?'],
+  [12.6, 14.4, 'luq', 'Escovei, mãe!'],
+
+  [14.8, 17.2, 'nar', 'Aí eu saí pra rua...'],
+  [17.2, 20.4, 'luq', 'HAHA! Nariz azul! Mentiroso!'],
+  [20.4, 23.0, 'viz', 'Olha quem fala...'],
+  [23.4, 26.6, 'luq', 'Ih, mentirosa! Nariz AZUL!'],
+  [26.6, 29.6, 'girl', 'Hã? Você não tá vendo não?'],
+
+  [30.0, 33.4, 'mayor', 'Eu NUNCA menti na minha vida!'],
+  [33.4, 36.6, 'nar', 'Mas ele vivia com esse cachecol na cara...'],
+  [36.6, 40.0, 'luq', 'Ele tá escondendo o nariz! Aposto que é AZUL!'],
+  [40.0, 41.8, 'nar', 'Aí eu puxei o cachecol...'],
+  [41.8, 44.8, 'nar', '...e o nariz dele era NORMAL.'],
+  [44.8, 47.6, 'mayor', 'Eu só tava gripado.'],
+  [47.6, 50.0, 'luq', 'Por que todo mundo tá me olhando?'],
+
+  [50.6, 52.8, 'nar', 'Aí eu olhei na água...'],
+  [53.0, 55.0, 'luq', 'MEU NARIZ TÁ AZUL?!'],
+  [55.2, 58.0, 'nar', 'Desde a hora que eu menti pra minha mãe...'],
+
+  [58.4, 62.4, 'luq', 'Passei o dia apontando a mentira dos outros...'],
+  [62.4, 65.8, 'luq', 'e esqueci de olhar pro meu próprio nariz.'],
+  [65.8, 69.4, 'luq', 'Lição: antes de julgar, olha pra você.'],
+  [69.4, 73.0, 'luq', 'E no teu lugar, qual seria a regra? Comenta!'],
+];
+const SCENES = [
+  [0, 9.8, 'intro'], [9.8, 14.6, 'kitchen'], [14.6, 23.2, 'street1'], [23.2, 29.8, 'street2'],
+  [29.8, 50.3, 'square'], [50.3, 55.1, 'reflect'], [55.1, 58.2, 'flash'], [58.2, 73.1, 'end'],
+];
+const SPOS = { // camera focus per scene/speaker [x,y,zoom]
+  intro: { base: [540, 960, 1], luq: [380, 980, 1.1], man: [700, 900, 1.08] },
+  kitchen: { base: [540, 960, 1], mom: [680, 900, 1.08], luq: [360, 1000, 1.12] },
+  street1: { base: [540, 960, 1], luq: [380, 1000, 1.1], viz: [700, 900, 1.08] },
+  street2: { base: [540, 960, 1], luq: [380, 1000, 1.1], girl: [700, 1000, 1.1] },
+  square: { base: [540, 960, 1], mayor: [700, 860, 1.08], luq: [400, 1000, 1.1] },
+  reflect: { base: [540, 960, 1] }, flash: { base: [540, 960, 1] },
+  end: { base: [540, 960, 1], luq: [540, 980, 1.04] },
+};
+const PUNCH = new Set(['Nesse lugar, quem mente fica com o nariz AZUL.', '...e o nariz dele era NORMAL.', 'MEU NARIZ TÁ AZUL?!', 'Olha quem fala...', 'Hã? Você não tá vendo não?']);
+
+function activeLine(t) { return LINES.find(l => t >= l[0] && t < l[1]); }
+function speakEnd(l) { return l[0] + Math.min(l[1] - l[0] - 0.3, l[3].split(' ').length * 0.3 + 0.3); }
+function talkAmt(who, t) {
+  const l = activeLine(t);
+  if (!l || l[2] !== who || t > speakEnd(l)) return 0;
+  return Math.abs(Math.sin((t - l[0]) * 14)) * 0.9 + 0.1;
+}
+function blinkAt(t, seed) { return (t + seed * 1.37) % 3.3 < 0.12; }
+function bob(who, t) { return talkAmt(who, t) > 0 ? Math.abs(Math.sin(t * 7)) * -8 : Math.sin(t * 2 + who.length) * 3; }
+const sceneAt = t => SCENES.find(s => t >= s[0] && t < s[1]) || SCENES[SCENES.length - 1];
+const luqNose = t => (t > 14.25 ? 1 : (t > 14.0 ? easeBack((t - 14.0) / 0.25) : 0));
+
+function camFor(t, sc) {
+  const map = SPOS[sc[2]];
+  const l = activeLine(t);
+  const pick = line => (line && line[0] >= sc[0] && map[line[2]]) ? map[line[2]] : map.base;
+  const target = pick(l);
+  let prev = map.base;
+  if (l) { const pl = LINES[LINES.indexOf(l) - 1]; if (pl && pl[0] >= sc[0]) prev = pick(pl); }
+  const k = l ? ease((t - l[0]) / 0.35) : 1;
+  let z = lerp(prev[2], target[2], k);
+  if (l && PUNCH.has(l[3])) z += 0.07 * Math.max(0, 1 - (t - l[0]) / 0.25) + 0.03;
+  return [lerp(prev[0], target[0], k), lerp(prev[1], target[1], k), z];
+}
+
+// ---------- extra backgrounds ----------
+function bgSquare(t) {
+  const g = ctx.createLinearGradient(0, 0, 0, 1100); g.addColorStop(0, '#8cc8f2'); g.addColorStop(1, '#d9eefb');
+  ctx.fillStyle = g; ctx.fillRect(-300, -300, W + 600, H + 600);
+  cloud(200 + (t * 8) % 1400 - 200, 220, 1.0); cloud(900 - (t * 5) % 1300 + 200, 340, 0.8);
+  // town hall
+  shape('#f5f0e1', rr(180, 420, 720, 720, 0));
+  shape('#e2a85a', poly([140, 428, 540, 220, 940, 428]));
+  shape('#fff', ell(540, 340, 50, 50)); shape(null, () => { ctx.moveTo(540, 340); ctx.lineTo(540, 305); ctx.moveTo(540, 340); ctx.lineTo(565, 350); });
+  for (let i = 0; i < 4; i++) shape('#f3c94a', rr(240 + i * 165, 500, 100, 150, 50));
+  shape('#8d5a3b', rr(470, 900, 140, 240, 70));
+  ctx.font = '700 46px Fredoka'; ctx.textAlign = 'center'; ctx.fillStyle = INK; ctx.fillText('PREFEITURA', 540, 720);
+  shape('#cfc6b4', rr(-200, 1140, W + 400, 900, 0));
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.lineWidth = 5; for (let x = -200; x < W + 200; x += 120) { ctx.beginPath(); ctx.moveTo(x, 1140); ctx.lineTo(x - 100, 1920); ctx.stroke(); }
+  shape(null, () => { ctx.moveTo(-200, 1140); ctx.lineTo(W + 200, 1140); });
+  // stage
+  shape('#b07040', rr(560, 1200, 420, 110, 10));
+  shape('#e2453c', rr(560, 1200, 420, 30, 6));
+}
+function crowd(t, look, shock) {
+  const ppl = [[90, '#e9b48c', '#3a8fd6', 'short', '#2a1c16', 1], [250, '#8a5a3c', '#f3c94a', 'curly', '#1f1714', 0], [830, '#f0c9a4', '#e86fa0', 'long', '#6b3b22', 1], [990, '#c98b5e', '#5fbf62', 'bald', '#1f1714', 0]];
+  for (const [x, sk, sh, hr, hc, blue] of ppl) {
+    person({ kind: 'adult', x, y: 1960 + Math.sin(t * 2 + x) * 3, s: 0.6, skin: sk, shirt: sh, pants: '#444', shoes: '#333', hair: hr, hairColor: hc, blueNose: blue, look, expr: shock ? 'shock' : null, blink: blinkAt(t, x) });
+  }
+}
+function simpleTable() {
+  shape('#b07040', rr(560, 1040, 560, 50, 10));
+  shape('#8a5530', rr(600, 1090, 40, 230, 8)); shape('#8a5530', rr(1040, 1090, 40, 230, 8));
+  shape('#fff', ell(760, 1030, 60, 14)); shape('#ffcc29', ell(760, 1020, 34, 12), 5);
+  shape('#ff8a7a', rr(880, 960, 60, 80, 12)); shape(null, () => { ctx.arc(950, 1000, 18, -1.2, 1.2); }, 6);
+}
+function popText(txt, x, y, size, color, k, rot = 0) {
+  if (k <= 0) return;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); const s = easeBack(k); ctx.scale(s, s);
+  ctx.font = `700 ${size}px Fredoka`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = size * 0.22; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.strokeText(txt, 0, 4);
+  ctx.fillStyle = color; ctx.fillText(txt, 0, 0); ctx.restore();
+}
+
+// ---------- scenes ----------
+function sIntro(t) {
+  bgStreet(t);
+  const manBlue = t > 6.0 ? 1 : (t > 5.75 ? easeBack((t - 5.75) / 0.25) : 0);
+  person({ ...MAN, x: 760, y: 1300 + bob('man', t), s: 0.95, talk: talkAmt('man', t), blink: blinkAt(t, 3), look: -1, armR: 2.55, blueNose: manBlue, expr: t > 6.2 ? 'shock' : 'grin' });
+  person({ ...LUQ, x: 320, y: 1310 + bob('luq', t), s: 1, talk: talkAmt('luq', t), blink: blinkAt(t, 1), look: t > 4.2 ? 1 : 0, expr: t > 6.2 ? 'grin' : 'grin', armR: t < 4 ? 2.0 + Math.sin(t * 8) * 0.25 : 0, armL: 0 });
+  if (t > 5.9 && t < 9.6) popText('PLIM!', 820, 560, 100, '#7cc6ff', (t - 5.9) / 0.25, 0.15);
+}
+function sKitchen(t) {
+  bgKitchen(t);
+  person({ ...MOM, x: 800, y: 1290 + bob('mom', t), s: 1, talk: talkAmt('mom', t), blink: blinkAt(t, 3), look: -1, armL: 0.1, armR: 0.1, expr: t > 14.0 ? 'shock' : null });
+  simpleTable();
+  person({ ...LUQ, x: 300, y: 1310 + bob('luq', t), s: 1, talk: talkAmt('luq', t), blink: blinkAt(t, 1), look: 1, expr: 'grin', armR: t > 12.6 ? 2.6 : 0, blueNose: luqNose(t) });
+}
+function sStreet1(t) {
+  bgStreet(t + 40);
+  person({ ...VIZ, x: 780, y: 1300 + bob('viz', t), s: 0.95, talk: talkAmt('viz', t), blink: blinkAt(t, 4), look: -1, blueNose: 1, expr: t > 17.6 && t < 20.4 ? 'sad' : null });
+  const walk = clamp((t - 14.6) / 2.4, 0, 1);
+  person({ ...LUQ, x: lerp(-100, 330, ease(walk)), y: 1310 + (walk < 1 ? Math.abs(Math.sin(t * 10)) * -12 : bob('luq', t)), s: 1, talk: talkAmt('luq', t), blink: blinkAt(t, 1), look: 1, expr: t > 20.6 ? 'shock' : 'grin', armR: t > 17.2 && t < 20.4 ? 1.55 : 0, blueNose: 1 });
+}
+function sStreet2(t) {
+  bgStreet(t + 90);
+  person({ ...GIRL, x: 740, y: 1310 + bob('girl', t), s: 1, talk: talkAmt('girl', t), blink: blinkAt(t, 6), look: -1, blueNose: 1, expr: t > 26.6 ? 'shock' : null });
+  person({ ...LUQ, x: 330, y: 1310 + bob('luq', t), s: 1, talk: talkAmt('luq', t), blink: blinkAt(t, 1), look: 1, expr: t > 26.8 ? 'shock' : 'grin', armR: t < 26.6 ? 1.55 : 0, blueNose: 1 });
+}
+function sSquare(t) {
+  bgSquare(t);
+  const pulled = t > 41.0;
+  const sneeze = t > 46.0 && t < 47.0;
+  person({ ...MAYOR, x: 770, y: 1220 + bob('mayor', t), s: 0.9, talk: pulled ? talkAmt('mayor', t) : 0, blink: blinkAt(t, 5), look: t > 47.6 ? -1 : 0, scarf: !pulled, armL: t < 33.4 ? 2.5 : 0.2, armR: t < 33.4 ? 2.5 : 0.2, expr: (t > 41 && t < 44.8) ? 'shock' : null, tilt: sneeze ? 0.15 : 0 });
+  // flying scarf
+  if (pulled && t < 44) {
+    const k = (t - 41.0);
+    ctx.save(); ctx.translate(700 - k * 300, 760 - k * 380); ctx.rotate(k * 4);
+    shape('#e2453c', rr(-110, -40, 220, 80, 36)); ctx.restore();
+  }
+  let lx = 330;
+  if (t > 40.0 && t < 41.2) lx = lerp(330, 560, ease((t - 40) / 1.0));
+  else if (t >= 41.2) lx = lerp(560, 400, ease((t - 41.2) / 0.8));
+  person({ ...LUQ, x: lx, y: 1310 + bob('luq', t), s: 1, talk: talkAmt('luq', t), blink: blinkAt(t, 1), look: 1, blueNose: 1, armR: (t > 36.6 && t < 40) ? 1.55 : (t > 40.5 && t < 41.4 ? 2.4 : 0), expr: t > 41.8 ? 'shock' : 'grin' });
+  crowd(t, t > 47.6 ? -1 : 0, t > 41.8);
+  if (sneeze) popText('ATCHIM!', 780, 480, 90, '#ffffff', (t - 46.0) / 0.2, -0.1);
+  if (t > 42.0 && t < 44.8) popText('NORMAL?!', 600, 300, 100, Y, (t - 42.2) / 0.25, 0.1);
+  if (t > 48.0) { popText('?', 400, 560, 120, '#ffffff', (t - 48.0) / 0.2, -0.2); popText('!', 840, 1550, 100, '#ffffff', (t - 48.3) / 0.2, 0.2); popText('!', 160, 1560, 100, '#ffffff', (t - 48.5) / 0.2, -0.2); }
+}
+function sReflect(t) {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#5aa9e6'); g.addColorStop(1, '#1d4f91');
+  ctx.fillStyle = g; ctx.fillRect(-300, -300, W + 600, H + 600);
+  const reveal = clamp((t - 51.5) / 1.4, 0, 1);
+  ctx.save(); ctx.globalAlpha = 0.25 + reveal * 0.75;
+  const wob = (1 - reveal) * 14;
+  ctx.translate(Math.sin(t * 6) * wob, 0);
+  person({ ...LUQ, x: 540, y: 2120, s: 2.4, blueNose: 1, expr: t > 52.8 ? 'shock' : null, talk: talkAmt('luq', t), blink: blinkAt(t, 1), look: 0 });
+  ctx.restore();
+  // ripples
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+  for (let i = 0; i < 9; i++) {
+    const y = ((i * 230 + t * 60) % 2000) - 40; const x = (i * 377) % 900 + 90;
+    ctx.beginPath(); ctx.moveTo(x - 90, y); ctx.quadraticCurveTo(x, y - 18 * (1 - reveal * 0.7), x + 90, y); ctx.stroke();
+  }
+  if (t > 52.8) popText('!!!', 860, 400, 140, Y, (t - 52.8) / 0.2, 0.2);
+}
+function sFlash(t) {
+  ctx.save(); ctx.filter = 'sepia(0.85) saturate(1.2)';
+  sKitchen(12.8 + (t - 55.1) * 0.5);
+  ctx.restore();
+  ctx.fillStyle = 'rgba(0,0,0,0.0)';
+  if (t > 55.6) popText('MENTIRA', 330, 560, 120, '#ff4d5e', (t - 55.6) / 0.25, -0.12);
+}
+function sEnd(t) {
+  bgSquare(t);
+  const lesson = t > 65.8;
+  person({ ...LUQ, x: 540, y: 1420 + bob('luq', t), s: 1.35, talk: talkAmt('luq', t), blink: blinkAt(t, 1), look: 0, blueNose: 1, expr: t < 62.4 ? 'sad' : 'grin', armR: t > 69.4 ? 2.0 + Math.sin(t * 8) * 0.25 : (lesson ? 0.3 : 0), tilt: t < 62.4 ? -0.06 : 0 });
+  if (lesson) {
+    const k = (t - 65.9) / 0.3;
+    ctx.save(); ctx.translate(540, 300); const s = easeBack(k); ctx.scale(s, s);
+    shape(Y, rr(-420, -110, 840, 220, 40), 9);
+    ctx.restore();
+    popText('LIÇÃO DE HOJE', 540, 245, 64, '#ffffff', k);
+    popText('NÃO JULGUE OS OUTROS', 540, 335, 62, '#1d4f91', k);
+  }
+}
+const FN = { intro: sIntro, kitchen: sKitchen, street1: sStreet1, street2: sStreet2, square: sSquare, reflect: sReflect, flash: sFlash, end: sEnd };
+
+// ---------- subtitles ----------
+function drawSubs(t) {
+  const l = activeLine(t);
+  if (!l) return;
+  const words = l[3].split(' ');
+  const per = (speakEnd(l) - l[0]) / words.length;
+  const nShown = Math.min(words.length, Math.floor((t - l[0]) / per) + 1);
+  const fs = 88;
+  ctx.font = `700 ${fs}px Fredoka`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  const maxW = 860, space = ctx.measureText(' ').width;
+  const rows = [[]]; let rw = 0;
+  words.forEach((w, i) => { const ww = ctx.measureText(w).width; if (rw + ww > maxW && rows[rows.length - 1].length) { rows.push([]); rw = 0; } rows[rows.length - 1].push([w, ww, i]); rw += ww + space; });
+  const lineH = fs * 1.1;
+  const baseY = 1440 - (rows.length - 1) * lineH / 2;
+  if (l[2] !== 'nar') {
+    const [nm, col] = NAMES[l[2]];
+    ctx.font = '700 44px Fredoka'; const tw = ctx.measureText(nm).width + 50; const ty = baseY - lineH / 2 - 50;
+    const pop = easeBack((t - l[0]) / 0.25);
+    ctx.save(); ctx.translate(540, ty); ctx.scale(pop, pop);
+    shape(col, rr(-tw / 2, -31, tw, 62, 31), 6);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(nm, 0, 3); ctx.restore();
+    ctx.font = `700 ${fs}px Fredoka`; ctx.textAlign = 'left';
+  }
+  rows.forEach((row, ri) => {
+    const total = row.reduce((a, r) => a + r[1], 0) + space * (row.length - 1);
+    let x = 540 - total / 2; const y = baseY + ri * lineH;
+    for (const [w, ww, i] of row) {
+      if (i < nShown) {
+        const k = easeBack((t - l[0] - i * per) / 0.18);
+        const isCur = i === nShown - 1;
+        const caps = /[A-ZÇÃÕÁÉÍÓÚ]{2,}/.test(w) && w === w.toUpperCase();
+        ctx.save(); ctx.translate(x + ww / 2, y); ctx.scale(k, k);
+        ctx.lineWidth = 20; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.strokeText(w, -ww / 2, 4);
+        ctx.fillStyle = (isCur || caps) ? Y : '#ffffff';
+        if (/AZUL/.test(w)) ctx.fillStyle = '#5fb0ff';
+        ctx.fillText(w, -ww / 2, 0); ctx.restore();
+      }
+      x += ww + space;
+    }
+  });
+}
+
+function render(t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  const sc = sceneAt(t); const local = t - sc[0];
+  let [fx, fy, z] = camFor(t, sc);
+  z *= 1 + local * 0.004;
+  if (local < 0.35) z *= 1 + 0.12 * (1 - easeBack(local / 0.35));
+  ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-fx, -fy);
+  FN[sc[2]](t);
+  ctx.restore();
+  if (local < 0.25) { ctx.fillStyle = `rgba(255,255,255,${1 - local / 0.25})`; ctx.fillRect(0, 0, W, H); }
+  if (sc[2] === 'flash') { const vg = ctx.createRadialGradient(540, 960, 500, 540, 960, 1200); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.6)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H); }
+  // hook title
+  if (t < 4.0) {
+    const k = clamp((t - 0.1) / 0.3, 0, 1); const out = t > 3.7 ? 1 - (t - 3.7) / 0.3 : 1;
+    ctx.save(); ctx.globalAlpha = out;
+    shape('#1d4f91', rr(90, 240, 900, 240, 40), 8);
+    popText('QUEM MENTE FICA COM', 540, 315, 70, '#ffffff', k);
+    popText('O NARIZ AZUL', 540, 410, 96, '#5fb0ff', k);
+    ctx.restore();
+  }
+  drawSubs(t);
+}
+window.render = render;
+window.ready = document.fonts.load('700 92px Fredoka').then(() => document.fonts.load('600 52px Fredoka')).then(() => { render(0); return true; });
+window.frame = t => { render(t); return cv.toDataURL('image/jpeg', 0.92); };
+</script>
+</body></html>
