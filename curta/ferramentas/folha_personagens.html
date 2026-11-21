@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Folha de personagens</title></head>
+<body style="margin:0;background:#222">
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../src/util.js"></script>
+<script src="../src/personagens.js"></script>
+<script>
+const ctx = document.getElementById('c').getContext('2d');
+const imgs = {};
+Promise.all(Object.values(PERS).map(P => new Promise(r => { const i = new Image(); i.onload = () => { imgs[P.src] = i; r(); }; i.src = '../' + P.src; }))).then(() => {
+  prepararPersonagens(imgs);
+  ctx.fillStyle = '#3a3f55'; ctx.fillRect(0, 0, W, H);
+  const ks = Object.keys(PERS);
+  const ex = [{}, { blink: 1 }, { happyEyes: 1, mouth: 'laugh', blush: 1 }, { sad: 1, mouth: 'sad' }, { mouth: 'o' }, { sparkle: 1, tear: 0.5, blush: 0.8 }, { blink: 0.5 }];
+  ks.forEach((k, i) => {
+    ex.forEach((e, j) => {
+      drawChar(ctx, k, Object.assign({ x: 140 + j * 270, y: 230 + i * 215 + 400, h: 1050, crop: PERS[k].neck + 40, shadow: false, headTilt: j == 6 ? 0.12 : 0 }, e));
+    });
+  });
+  document.title = 'pronto';
+});
+</script></body></html>

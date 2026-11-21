@@ -1,0 +1,7 @@
+# Fotos reais do casal e o vídeo final NÃO vão para o repositório (ele é público).
+fotos/*.jpg
+fotos/*.jpeg
+fotos/*.png
+saida/
+audio/trilha.wav
+node_modules/
