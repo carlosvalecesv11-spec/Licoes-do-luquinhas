@@ -96,6 +96,9 @@ def construir(nome, src, partes, olhos, extras=None):
             m |= ellipse_mask((H, W), p['cx'], p['y1'], p['jaw'], p['neck'] - p['y1']) & (np.mgrid[0:H, 0:W][0] >= p['y1'])
         else:
             m = poly_mask((H, W), p['poly'])
+        if p.get('excluir_elipse'):
+            ex = p['excluir_elipse']
+            m &= ~ellipse_mask((H, W), *ex)
         if p.get('dilatar'):
             m = ndimage.binary_dilation(m, iterations=p['dilatar'])
         own = m & alpha & (~tomado if not p.get('compartilha') else True)
@@ -178,6 +181,10 @@ def construir(nome, src, partes, olhos, extras=None):
 
 # ---------------------------------------------------------------- MACAQUINHO (camisa preta)
 construir('m_preta', 'assets/referencias/macaquinho_camisa_preta.png', [
+    dict(nome='orelhaE', pai='cabeca', pivo=[342, 285], z=49.5, preencher=False, excluir_elipse=[512, 250, 172, 232],
+         poly=[[362, 270], [359, 295], [352, 319], [340, 339], [325, 355], [307, 365], [288, 368], [269, 365], [251, 355], [236, 339], [224, 319], [217, 295], [214, 270], [217, 245], [224, 221], [236, 201], [251, 185], [269, 175], [288, 172], [307, 175], [325, 185], [340, 201], [352, 221], [359, 245]]),
+    dict(nome='orelhaD', pai='cabeca', pivo=[684, 285], z=49.5, preencher=False, excluir_elipse=[512, 250, 172, 232],
+         poly=[[803, 272], [801, 297], [794, 321], [782, 341], [768, 357], [751, 367], [733, 370], [715, 367], [698, 357], [684, 341], [672, 321], [665, 297], [663, 272], [665, 247], [672, 223], [684, 203], [698, 187], [715, 177], [733, 174], [751, 177], [768, 187], [782, 203], [794, 223], [801, 247]]),
     dict(nome='cabeca', forma='cabeca', y1=398, cx=535, jaw=114, neck=452, pai='tronco', pivo=[535, 452], z=50, preencher=False),
     dict(nome='antebracoE', pai='bracoE', pivo=[305, 655], ponta=[350, 885], z=46, borda=True, sem_escuro_abaixo=805, dilatar=3,
          poly=[[244, 640], [372, 650], [394, 730], [390, 800], [382, 900], [322, 900], [302, 832], [268, 802], [248, 762], [240, 700]]),
@@ -205,6 +212,10 @@ construir('m_preta', 'assets/referencias/macaquinho_camisa_preta.png', [
 
 # ---------------------------------------------------------------- MACAQUINHA (vestido amarelo)
 construir('f_vestido', 'assets/referencias/macaquinha_vestido_amarelo.png', [
+    dict(nome='orelhaE', pai='cabeca', pivo=[306, 350], z=49.5, preencher=False, excluir_elipse=[500, 330, 196, 250],
+         poly=[[322, 352], [320, 376], [313, 399], [303, 418], [290, 433], [275, 443], [258, 446], [241, 443], [226, 433], [213, 418], [203, 399], [196, 376], [194, 352], [196, 328], [203, 305], [213, 286], [226, 271], [241, 261], [258, 258], [275, 261], [290, 271], [303, 286], [313, 305], [320, 328]]),
+    dict(nome='orelhaD', pai='cabeca', pivo=[694, 345], z=49.5, preencher=False, excluir_elipse=[500, 330, 196, 250],
+         poly=[[808, 348], [806, 372], [799, 395], [789, 414], [776, 429], [761, 439], [744, 442], [727, 439], [712, 429], [699, 414], [689, 395], [682, 372], [680, 348], [682, 324], [689, 301], [699, 282], [712, 267], [727, 257], [744, 254], [761, 257], [776, 267], [789, 282], [799, 301], [806, 324]]),
     dict(nome='cabeca', forma='cabeca', y1=494, cx=502, jaw=116, neck=552, pai='tronco', pivo=[502, 552], z=50, preencher=False),
     dict(nome='maos', sem_amarelo=True, pai='raiz', pivo=[505, 960], z=48, preencher=False, borda=False, dilatar=8,
          poly=[[452, 905], [522, 884], [566, 892], [578, 960], [562, 1042], [468, 1044], [446, 980]]),

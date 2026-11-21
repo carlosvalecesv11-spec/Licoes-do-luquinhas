@@ -1,6 +1,30 @@
 {
  "src": "assets/referencias/macaquinho_camisa_preta.png",
  "partes": {
+  "orelhaE": {
+   "pai": "cabeca",
+   "pivo": [
+    342,
+    285
+   ],
+   "z": 49.5,
+   "x": 234,
+   "y": 174,
+   "w": 115,
+   "h": 181
+  },
+  "orelhaD": {
+   "pai": "cabeca",
+   "pivo": [
+    684,
+    285
+   ],
+   "z": 49.5,
+   "x": 675,
+   "y": 175,
+   "w": 109,
+   "h": 194
+  },
   "cabeca": {
    "pai": "tronco",
    "pivo": [
@@ -8,9 +32,9 @@
     452
    ],
    "z": 50,
-   "x": 234,
+   "x": 298,
    "y": 13,
-   "w": 550,
+   "w": 430,
    "h": 440
   },
   "antebracoE": {

@@ -1,6 +1,30 @@
 {
  "src": "assets/referencias/macaquinha_vestido_amarelo.png",
  "partes": {
+  "orelhaE": {
+   "pai": "cabeca",
+   "pivo": [
+    306,
+    350
+   ],
+   "z": 49.5,
+   "x": 208,
+   "y": 258,
+   "w": 105,
+   "h": 188
+  },
+  "orelhaD": {
+   "pai": "cabeca",
+   "pivo": [
+    694,
+    345
+   ],
+   "z": 49.5,
+   "x": 690,
+   "y": 255,
+   "w": 105,
+   "h": 188
+  },
   "cabeca": {
    "pai": "tronco",
    "pivo": [
@@ -8,9 +32,9 @@
     552
    ],
    "z": 50,
-   "x": 208,
+   "x": 252,
    "y": 14,
-   "w": 587,
+   "w": 502,
    "h": 539
   },
   "maos": {

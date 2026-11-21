@@ -1,219 +1,274 @@
 'use strict';
 // =====================================================================
-//  DEMONSTRAÇÃO (20 s) — Cena do reencontro com personagens articulados.
-//  Caminhada, espera, celular, andar de um lado para o outro, sentar na
-//  calçada, levantar, caminhar até ela, abraço e beijo na testa.
+//  DEMONSTRAÇÃO v2 (20 s) — O REENCONTRO, com personagens articulados.
+//  Parte 1 Esperando (0–5.6) · Parte 2 Sentando (5.6–9.6)
+//  Parte 3 Ela aparece (9.6–12.4) · Parte 4 Reencontro (12.4–16.2)
+//  Parte 5 Beijo na testa (16.2–20)
 // =====================================================================
 window.DURACAO_FILME = 20;
 const SHOTS = [];
-function shot(t0, t1, draw, xf = 0.3) { SHOTS.push({ t0, t1, draw, xf }); }
+function shot(t0, t1, draw, xf = 0.15) { SHOTS.push({ t0, t1, draw, xf }); }
 const EH = 545, FH = 455;
-const CHAO = PREDIO.calcada;          // y dos pés na calçada
-const RUA_SENTADO = 1004;             // y dos pés na rua quando sentado no meio-fio
+const CHAO = PREDIO.calcada;   // pés na calçada
+const RUA_SENTADO = 1004;      // pés na rua quando sentado no meio-fio
+const XE = [[0, 820], [12.45, 820], [14.75, 990], [20, 990]];
+const XF = [[0, 1320], [12.7, 1320], [14.8, 1108], [20, 1108]];
 
-// trajetória com aceleração e desaceleração
-function trajeto(T, keys) { return kf(T, keys, easeInOut); }
-// amplitude da caminhada (liga/desliga suave)
-function passo(T, t0, t1, r = 0.25) { return sm(T, t0, t0 + r) * (1 - sm(T, t1 - r, t1)); }
+// Caminhada guiada pela distância percorrida: passos desaceleram junto com o corpo
+function caminhada(T, keys, h) {
+  const x = kf(T, keys, easeInOut);
+  const dt = 0.04;
+  const v = (kf(T + dt, keys, easeInOut) - kf(T - dt, keys, easeInOut)) / (2 * dt);
+  const amp = smooth(clamp(Math.abs(v) / (h * 0.24)));
+  const fase = (x - keys[0][1]) / (h * 0.13) * Math.PI;
+  return { x, amp, fase, v };
+}
+const K = (T, keys) => kf(T, keys, smooth);
 
 // ---------------------------------------------------------------- ELE
-function poseEle(T) {
-  // posição horizontal
-  const x = trajeto(T, [[0, 230], [3.0, 820], [7.0, 820], [8.2, 1010], [8.7, 1010], [9.9, 780], [14.2, 780], [15.6, 985], [17.6, 985], [18.0, 972], [20, 972]]);
-  const sitK = antecip(seg(T, 10.4, 11.4), 0.1, 0.06) * (1 - clamp(antecip(seg(T, 13.5, 14.2), 0.15, 0.08)));
-  const sit = clamp(sitK, -0.2, 1.1);
-  const y = lerp(CHAO, RUA_SENTADO, clamp(sit));
-  const p = novaPose({ x, y, h: EH, zBase: 0 });
+function estadoEle(T) {
+  const wk = caminhada(T, XE, EH);
+  const k = K(T, [[6.4, 0], [7.0, 0.22], [7.75, 1.05], [8.05, 1.0], [11.1, 1.0], [11.65, 0.6], [12.2, -0.04], [12.45, 0]]);
+  const sit = clamp(k, 0, 1.05);
+  const p = novaPose({ x: wk.x, y: lerp(CHAO, RUA_SENTADO, clamp(k, 0, 1)), h: EH, zBase: 0 });
   respirar(p, T, 1, 0);
-  // caminhada
-  const amp = Math.max(passo(T, 0, 3.0, 0.4), passo(T, 7.0, 8.2), passo(T, 8.7, 9.9), passo(T, 14.2, 15.6) * 1.1);
-  const fase = T * 2.35 * Math.PI;
-  andar(p, 'm_preta', fase, amp, false);
-  // parada com acomodação (inércia)
-  p.lean = -0.035 * Math.sin(seg(T, 3.0, 3.6) * Math.PI) + 0.03 * Math.sin(seg(T, 8.2, 8.7) * Math.PI) - 0.03 * Math.sin(seg(T, 9.9, 10.4) * Math.PI);
-  // olhar e cabeça
-  let look = [0.5, 0];
-  let face = { blink: blinkAt(T, 3), mouth: 'smile' };
-  if (T < 3.0) { look = [0.6, 0]; face.mouth = 'smile'; }
-  else if (T < 4.0) { look = [kf(T, [[3.0, 0.6], [3.5, 0.95], [4.0, 0.9]]), -0.1]; face.browUp = 0.2; }
-  if (T >= 4.0 && T < 6.6) { // celular
-    const k = sm(T, 4.0, 4.5) * (1 - sm(T, 6.1, 6.6));
-    look = [lerp(0.9, 0.15, k), lerp(0, 0.95, k)];
-    face.sad = 0.35 * k; face.browSad = 0.5 * k; face.mouth = k > 0.5 ? 'flat' : 'smile';
-    addPart(p, 'pescoco', 'dy', 0);
-    face.glow = { color: '#bfe3ff', a: 0.55 * k };
-    addPart(p, 'cabeca', 'dy', 22 * k); addPart(p, 'cabeca', 'rot', 0.09 * k);
-    p.maoFora.D = sm(T, 4.0, 4.35) * (1 - sm(T, 6.3, 6.6));
-    p.ik = { D: p.maoFora.D };
-    p.maos.D = [x + 0.05 * EH, y - 0.47 * EH + Math.sin(T * 1.3) * 3];
-    p.dedos = { D: 0.2 };
+  peso(p, 'm_preta', K(T, [[0, 0.55], [3.9, 0.55], [4.6, -0.7], [5.6, -0.45], [6.3, 0]]));
+  andar(p, 'm_preta', wk.fase, wk.amp, false);
+  if (k < 0) addPart(p, 'tronco', 'dy', k * 120); // estica ao terminar de levantar
+  const f = { blink: blinkAt(T, 3), mouth: 'smile', look: [0.85, -0.05] };
+
+  // Parte 1 — olha a porta, consulta o celular, muda o peso, preocupa-se
+  const cel = K(T, [[1.6, 0], [2.15, 1], [3.35, 1], [3.9, 0]]);
+  if (cel > 0) {
+    p.maoFora.D = clamp(cel * 1.6); p.ik = { D: cel };
+    p.maos.D = [wk.x + 0.05 * EH, CHAO - 0.47 * EH + Math.sin(T * 1.3) * 3];
+    p.dedos = { D: 0.15 + 0.25 * Math.max(0, Math.sin(T * 14)) * (T > 2.4 && T < 3.0 ? 1 : 0) };
+    f.look = [lerp(0.85, 0.2, cel), lerp(-0.05, 0.95, cel)];
+    addPart(p, 'cabeca', 'dy', 22 * cel); addPart(p, 'cabeca', 'rot', 0.09 * cel);
+    addPart(p, 'tronco', 'rot', 0.012 * cel);
+    if (T > 2.6) { f.mouth = 'flat'; f.browSad = 0.35 * cel; f.sad = 0.25 * cel; }
   }
-  if (T >= 6.6 && T < 10.4) { // preocupado, andando de um lado para o outro
-    const dir = T < 8.4 ? 1 : (T < 9.9 ? -1 : 0.4);
-    look = [dir * 0.85, 0.05];
-    face.sad = 0.45; face.browSad = 0.8; face.mouth = 'flat';
-    if (T > 6.6 && T < 7.3) { // suspiro
-      const k = Math.sin(seg(T, 6.6, 7.3) * Math.PI);
-      addPart(p, 'tronco', 'dy', -10 * k); addPart(p, 'cabeca', 'dy', -6 * k); face.blink = Math.max(face.blink, k > 0.6 ? 1 : 0);
+  if (T >= 3.9 && T < 5.6) {
+    const a = sm(T, 3.9, 4.3);
+    f.look = [0.92, -0.08]; f.browUp = 0.35 * (1 - sm(T, 4.6, 5.0));
+    addPart(p, 'cabeca', 'rot', 0.05 * a); p.lean = 0.02 * a;
+    if (T > 4.7) {
+      const w = sm(T, 4.7, 5.1);
+      f.browSad = 0.8 * w; f.sad = 0.4 * w; f.mouth = 'sad';
+      addPart(p, 'cabeca', 'rot', Math.sin((T - 4.9) * 8) * 0.03 * Math.sin(seg(T, 4.9, 5.5) * Math.PI));
     }
-    addPart(p, 'cabeca', 'rot', dir * 0.04);
   }
-  if (T >= 9.9 && T < 10.5) { const k = Math.sin(seg(T, 9.9, 10.5) * Math.PI); face.blink = k > 0.5 ? 1 : face.blink; addPart(p, 'tronco', 'dy', -8 * k); }
-  // sentado: cabeça baixa, braços apoiados nos joelhos
+  // Parte 2 — suspira, flexiona os joelhos, inclina o tronco, senta, apoia os braços
+  if (T >= 5.6 && T < 6.6) {
+    const s = Math.sin(seg(T, 5.6, 6.5) * Math.PI);
+    addPart(p, 'tronco', 'dy', -14 * s); addPart(p, 'cabeca', 'dy', -8 * s);
+    f.blink = T > 5.95 && T < 6.3 ? 1 : f.blink; f.mouth = T > 6.0 && T < 6.4 ? 'o' : 'sad'; f.open = 0.35;
+    f.browSad = 0.8; f.sad = 0.45; f.look = [0.3, 0.5];
+  }
+  if (T >= 6.4) {
+    const inclina = Math.sin(seg(T, 6.4, 8.0) * Math.PI) * (T < 11 ? 1 : 0);
+    addPart(p, 'tronco', 'dy', 16 * inclina); addPart(p, 'cabeca', 'dy', 14 * inclina);
+  }
   if (sit > 0.01) {
-    const s = clamp(sit);
-    sentar(p, 'm_preta', s);
+    sentar(p, 'm_preta', Math.min(1, sit));
     const tmp = matrizes('m_preta', p);
     const jE = tmp.canelaE.transformPoint(new DOMPoint(400, 1185)), jD = tmp.canelaD.transformPoint(new DOMPoint(595, 1185));
-    p.maoFora.E = p.maoFora.D = s;
-    p.ik = { E: s, D: s };
-    p.maos.E = [jE.x + 6, jE.y + 4]; p.maos.D = [jD.x - 6, jD.y + 4];
-    p.dedos = { E: 0.1, D: 0.1 };
-    const desanimo = s * (1 - sm(T, 12.9, 13.3));
-    addPart(p, 'cabeca', 'dy', 22 * desanimo); addPart(p, 'cabeca', 'rot', 0.07 * desanimo + Math.sin(T * 0.9) * 0.02 * desanimo);
-    addPart(p, 'tronco', 'rot', 0.02 * s);
-    if (T < 13.0) { look = [0.15, 0.9]; face.sad = 0.65; face.browSad = 1; face.mouth = 'sad'; face.blink = Math.max(face.blink, T > 11.8 && T < 12.2 ? 1 : 0); }
-  }
-  // ela aparece: reação
-  if (T >= 12.9 && T < 15.6) {
-    const k = sm(T, 12.9, 13.3);
-    look = [lerp(0.15, 0.9, k), lerp(0.9, -0.15, k)];
-    face.sad = 0; face.browSad = 0; face.browUp = 0.8 * k * (1 - sm(T, 14.0, 14.6));
-    face.mouth = T < 13.6 ? 'o' : 'laugh'; face.open = 0.7; face.sparkle = k;
-    if (T > 13.5) { // levanta e abre os braços
-      const a = sm(T, 13.8, 14.6);
-      p.maoFora.E = Math.max(p.maoFora.E || 0, a); p.maoFora.D = Math.max(p.maoFora.D || 0, a);
-      if (sit < 0.05) {
-        p.ik = { E: a, D: a };
-        const ab = 0.33 * EH;
-        p.maos.E = [x - ab, y - 0.5 * EH - Math.sin(T * 9) * 4 * a];
-        p.maos.D = [x + ab + 20, y - 0.52 * EH + Math.sin(T * 9 + 1) * 4 * a];
-        p.dedos = { E: 0.8, D: 0.8 };
-      }
+    const apoio = K(T, [[7.4, 0], [8.2, 1], [11.7, 1], [12.0, 0]]);
+    p.maoFora.E = p.maoFora.D = Math.max(apoio, p.maoFora.D || 0);
+    p.ik = { E: apoio, D: Math.max(apoio, (p.ik || {}).D || 0) };
+    p.maos.E = [jE.x + 8, jE.y + 2]; p.maos.D = [jD.x - 8, jD.y + 2];
+    p.dedos = { E: 0.05, D: 0.05 };
+    const baixa = K(T, [[8.1, 0], [9.6, 1], [10.4, 1], [10.85, 0]]);
+    addPart(p, 'cabeca', 'dy', 30 * baixa); addPart(p, 'cabeca', 'rot', 0.08 * baixa);
+    if (T < 10.4) {
+      f.look = [0.1, 0.9]; f.sad = 0.65; f.browSad = 1; f.mouth = 'sad';
+      if (T > 9.0 && T < 9.45) f.blink = 1;
     }
   }
-  return { p, face, look };
+  // Parte 3 — percebe, olhos se iluminam, apoia-se e levanta
+  if (T >= 10.4 && T < 12.45) {
+    const v = sm(T, 10.4, 10.85), luz = sm(T, 10.85, 11.15);
+    f.look = [lerp(0.1, 0.85, v), lerp(0.9, -0.35, v)];
+    f.sad = 0.65 * (1 - v); f.browSad = 1 - v; f.browUp = 0.9 * luz * (1 - sm(T, 11.8, 12.4));
+    f.iris = 1 + 0.14 * luz; f.sparkle = luz;
+    f.mouth = T < 10.85 ? 'sad' : T < 11.3 ? 'o' : 'laugh'; f.open = 0.65;
+    if (T > 11.1) { const imp = Math.sin(seg(T, 11.1, 11.7) * Math.PI); addPart(p, 'tronco', 'dy', 18 * imp); addPart(p, 'cabeca', 'dy', 10 * imp); }
+  }
+  // Parte 4 — caminha até ela, abre os braços
+  if (T >= 11.9 && T < 14.75) {
+    const solta = sm(T, 11.9, 12.35);
+    p.maoFora.E = p.maoFora.D = Math.max(solta, p.maoFora.E || 0);
+    const abre = sm(T, 13.9, 14.6);
+    const sw = Math.sin(wk.fase) * wk.amp;
+    p.ik = { E: Math.max(solta, (p.ik || {}).E || 0), D: Math.max(solta, (p.ik || {}).D || 0) };
+    const by = p.y - (p.bob || 0);
+    p.maos.E = [wk.x - lerp(0.13, 0.34, abre) * EH + sw * 22, by - lerp(0.36, 0.52, abre) * EH - Math.abs(sw) * 10];
+    p.maos.D = [wk.x + lerp(0.13, 0.36, abre) * EH + sw * 22, by - lerp(0.36, 0.54, abre) * EH - Math.abs(sw) * 10];
+    p.dedos = { E: 0.3 + 0.5 * abre, D: 0.3 + 0.5 * abre };
+    addPart(p, 'tronco', 'rot', -0.02 * sw);
+    f.look = [0.85, -0.12]; f.mouth = 'laugh'; f.open = 0.55; f.sparkle = 1; f.iris = 1.12; f.blush = 0.4 * abre;
+  }
+  return { p, f };
 }
 
 // ---------------------------------------------------------------- ELA
-function poseEla(T) {
-  const x = trajeto(T, [[12.6, 1320], [14.2, 1320], [15.6, 1100], [17.6, 1100], [18.0, 1112], [20, 1112]]);
-  const sai = sm(T, 13.0, 13.8);
-  const y = lerp(PREDIO.porta[1] + PREDIO.porta[3] + 12, CHAO, sm(T, 13.3, 14.3));
-  const p = novaPose({ x, y, h: FH, zBase: 1 });
+function estadoEla(T) {
+  const wk = caminhada(T, XF, FH);
+  const degrau = PREDIO.porta[1] + PREDIO.porta[3] + 12;
+  const y = lerp(degrau, CHAO, sm(T, 12.8, 13.3));
+  const p = novaPose({ x: wk.x, y, h: FH, zBase: 1 });
   respirar(p, T, 1, 2);
-  const amp = Math.max(passo(T, 13.0, 13.8, 0.2) * 0.7, passo(T, 14.2, 15.6) * 1.1);
-  andar(p, 'f_vestido', T * 2.5 * Math.PI + 1, amp, false);
-  p.unidas = 1 - sm(T, 14.3, 14.9);
-  const abre = sm(T, 14.3, 14.9);
-  if (abre > 0 && T < 15.6) {
-    p.ik = { E: abre, D: abre };
-    p.maos.E = [x - 0.3 * FH - 10, y - 0.52 * FH + Math.sin(T * 9) * 4];
-    p.maos.D = [x + 0.3 * FH, y - 0.5 * FH];
+  andar(p, 'f_vestido', wk.fase + 1, wk.amp, false);
+  // passinho para fora da porta
+  const sai = Math.sin(seg(T, 10.25, 10.75) * Math.PI);
+  p.bob = (p.bob || 0) + sai * 10;
+  p.unidas = 1 - sm(T, 13.6, 14.1);
+  const f = { blink: blinkAt(T, 5), mouth: 'smile', look: [-0.6, 0.05], blush: 0.5 };
+  if (T < 11.0) { f.look = [K(T, [[10.2, 0.4], [10.6, -0.3], [11.0, -0.85]]), 0.15]; f.mouth = 'smile'; }
+  else { f.mouth = 'laugh'; f.open = 0.6; f.sparkle = 1; f.iris = 1.1; f.look = [-0.85, 0.05]; }
+  if (T > 11.0 && T < 13.0) addPart(p, 'cabeca', 'rot', -0.06 * Math.sin(seg(T, 11.0, 11.8) * Math.PI));
+  const abre = sm(T, 13.9, 14.6);
+  if (T > 13.6 && T < 14.8) {
+    p.ik = { E: sm(T, 13.6, 14.1), D: sm(T, 13.6, 14.1) };
+    const by = p.y - (p.bob || 0);
+    p.maos.E = [wk.x - lerp(0.12, 0.33, abre) * FH, by - lerp(0.38, 0.55, abre) * FH];
+    p.maos.D = [wk.x + lerp(0.12, 0.3, abre) * FH, by - lerp(0.38, 0.5, abre) * FH];
+    p.dedos = { E: 0.6 * abre, D: 0.6 * abre };
   }
-  const face = { blink: blinkAt(T, 5), mouth: 'laugh', open: 0.6, sparkle: 1, blush: 0.6 };
-  let look = [-0.8, 0.05];
-  return { p, face, look };
+  return { p, f };
 }
 
-// ---------------------------------------------------------------- abraço e beijo
+// ---------------------------------------------------------------- abraço e beijo (contato)
 function interacao(T, E, F) {
-  const hug = sm(T, 15.4, 15.9);
-  const kiss = sm(T, 18.2, 18.8) * (1 - sm(T, 19.6, 20.2));
-  const sway = Math.sin((T - 15.6) * 2.0) * 0.02 * hug;
+  const hug = sm(T, 14.6, 15.2);
+  if (hug <= 0) return { hug: 0, kiss: 0 };
+  const recosta = K(T, [[14.9, 0], [15.4, 1], [16.6, 1], [17.1, 0.15], [20, 0.15]]);  // ela encosta a cabeça
+  const afasta = K(T, [[16.2, 0], [16.8, 1], [20, 1]]);                                 // ele afasta a cabeça
+  const kiss = K(T, [[17.2, 0], [18.0, 1], [18.9, 1], [19.5, 0.6], [20, 0.6]]);           // inclina e beija
+  const sway = Math.sin((T - 14.6) * 1.8) * 0.018 * hug;
   E.p.x += 20 * kiss; F.p.x -= 15 * kiss;
-  if (hug > 0) {
-    const pe = pontos('f_vestido', Object.assign(novaPose({}), F.p, { _M: null }));
-    // braços dele: um nas costas dela (atrás do corpo, mão no ombro distante), outro na cintura
-    E.p.maoFora.E = E.p.maoFora.D = 1;
-    E.p.ik = { E: hug, D: hug };
-    E.p.maos.D = [pe.ombroD.x - 10, pe.ombroD.y + 30];
-    E.p.maos.E = [pe.waist.x - 70, pe.waist.y - 10];
-    E.p.z.bracoD = 0.95; E.p.z.antebracoD = 0.96; E.p.z.maoD = 2.0;
-    E.p.z.bracoE = 0.9; E.p.z.antebracoE = 1.9; E.p.z.maoE = 1.95;
-    E.p.dedos = { E: 0.3, D: 0.4 };
-    // braços dela: um em volta dele (atrás), outro no peito dele
-    const pm = pontos('m_preta', Object.assign(novaPose({}), E.p, { _M: null }));
-    F.p.unidas = 0;
-    F.p.ik = { E: hug, D: hug };
-    F.p.maos.E = [pm.ombroD.x - 40, pm.ombroD.y + 60];
-    F.p.maos.D = [pm.waist.x + 45, pm.waist.y - 55];
-    F.p.z.bracoE = 0.97; F.p.z.antebracoE = -0.1; F.p.z.maoE = -0.05;
-    F.p.z.antebracoD = 1.55; F.p.z.maoD = 1.56;
-    E.p.lean = (E.p.lean || 0) + 0.05 * hug + sway + 0.06 * kiss;
-    F.p.lean = (F.p.lean || 0) - 0.05 * hug + sway - 0.02 * kiss;
-    E.face = Object.assign(E.face, { mouth: kiss > 0.3 ? 'kiss' : 'smile', happyEyes: T < 17.6 || kiss > 0.4 ? 1 : 0, blush: 0.6, sparkle: 0.5 });
-    F.face = Object.assign(F.face, { mouth: 'smile', happyEyes: T < 17.6 || kiss > 0.3 ? 1 : 0, blush: 0.8 });
-    addPart(E.p, 'cabeca', 'rot', 0.12 * hug * (1 - kiss) + 0.24 * kiss);
-    addPart(E.p, 'cabeca', 'dx', 10 * kiss);
-    addPart(F.p, 'cabeca', 'rot', -0.14 * hug * (1 - kiss) - 0.1 * kiss);
-    E.look = [0.8, 0.35]; F.look = [-0.85, -0.55];
-    if (kiss > 0.05) E.p.z.cabeca = 3.0;
-  }
-  E.p.face = Object.assign(E.face, { look: E.look });
-  F.p.face = Object.assign(F.face, { look: F.look });
-  return { hug, kiss };
+  E.p.lean = (E.p.lean || 0) + 0.035 * hug + sway + 0.06 * kiss;
+  F.p.lean = (F.p.lean || 0) - 0.06 * hug * (0.5 + 0.5 * recosta) + sway - 0.02 * kiss;
+  // pontos do corpo do outro (para as mãos realmente envolverem)
+  const pe = pontos('f_vestido', Object.assign(novaPose({}), F.p, { _M: null }));
+  const pm = pontos('m_preta', Object.assign(novaPose({}), E.p, { _M: null }));
+  // ELE: braço direito por trás das costas dela (mão aparece no lado de lá), braço esquerdo sobre o ombro dela
+  E.p.maoFora.E = E.p.maoFora.D = 1;
+  E.p.ik = { E: hug, D: hug };
+  E.p.maos.D = [lerp(E.p.maos.D ? E.p.maos.D[0] : pe.ombroD.x, pe.ombroD.x - 6, hug), lerp(E.p.maos.D ? E.p.maos.D[1] : pe.ombroD.y, pe.ombroD.y + 95, hug)];
+  E.p.maos.E = [lerp(E.p.maos.E ? E.p.maos.E[0] : pe.ombroE.x, pe.ombroE.x + 34, hug), lerp(E.p.maos.E ? E.p.maos.E[1] : pe.ombroE.y, pe.ombroE.y + 78, hug)];
+  E.p.z.bracoD = 0.95; E.p.z.antebracoD = 0.96; E.p.z.maoD = 2.0;
+  E.p.z.antebracoE = 1.43; E.p.z.maoE = 1.44;
+  E.p.dedos = { E: 0.35, D: 0.45 };
+  // ELA: braço esquerdo em volta das costas dele (por trás), braço direito na cintura dele (entre os dois)
+  F.p.unidas = 0;
+  F.p.ik = { E: hug, D: hug };
+  F.p.maos.E = [lerp(F.p.maos.E ? F.p.maos.E[0] : pm.ombroD.x, pm.ombroD.x - 30, hug), lerp(F.p.maos.E ? F.p.maos.E[1] : pm.ombroD.y, pm.ombroD.y + 120, hug)];
+  F.p.maos.D = [lerp(F.p.maos.D ? F.p.maos.D[0] : pm.waist.x, pm.waist.x + 25, hug), lerp(F.p.maos.D ? F.p.maos.D[1] : pm.waist.y, pm.waist.y - 40, hug)];
+  F.p.z.bracoE = 0.97; F.p.z.antebracoE = -0.1; F.p.z.maoE = -0.05;
+  F.p.z.antebracoD = 0.98; F.p.z.maoD = 0.985;
+  F.p.dedos = { E: 0.3, D: 0.35 };
+  // rostos
+  E.f = { blink: blinkAt(T, 3), mouth: kiss > 0.45 ? 'kiss' : 'smile', blush: 0.55, sparkle: 0.4,
+    happyEyes: (T < 16.3 || kiss > 0.55) ? 1 : 0, look: [0.65, 0.75] };
+  F.f = { blink: blinkAt(T, 5), mouth: 'smile', blush: 0.6 + 0.3 * kiss, sparkle: 0.7,
+    happyEyes: (recosta > 0.5 || kiss > 0.35) ? 1 : 0, look: [-0.7, -0.75] };
+  // cabeças: ela encosta no peito dele; ele apoia o queixo, afasta, olha e inclina
+  addPart(F.p, 'cabeca', 'rot', -0.3 * recosta - 0.1 * kiss);
+  addPart(F.p, 'cabeca', 'dx', -28 * recosta); addPart(F.p, 'cabeca', 'dy', 8 * recosta);
+  addPart(E.p, 'cabeca', 'rot', 0.12 * hug * (1 - afasta) - 0.03 * afasta * (1 - kiss) + 0.24 * kiss);
+  addPart(E.p, 'cabeca', 'dy', -8 * afasta * (1 - kiss));
+  addPart(E.p, 'cabeca', 'dx', 10 * kiss);
+  addPart(E.p, 'tronco', 'rot', 0.02 * kiss);
+  if (kiss > 0.05) E.p.z.cabeca = 3.0;
+  return { hug, kiss, recosta };
 }
 
-// ---------------------------------------------------------------- cena
-function cenaDemo(ctx, T) {
-  const noite = clamp(seg(T, 0, 13) * 0.6);
-  const porta = sm(T, 12.6, 13.1) * (1 - sm(T, 14.4, 15.2) * 0.85);
-  const E = poseEle(T);
-  const F = T >= 12.6 ? poseEla(T) : null;
+// ---------------------------------------------------------------- estado completo de um instante
+function estado(T) {
+  const E = estadoEle(T);
+  const F = T >= 9.7 ? estadoEla(T) : null;
   const ia = F ? interacao(T, E, F) : { hug: 0, kiss: 0 };
-  if (!F) E.p.face = Object.assign(E.face, { look: E.look });
-  // ela por trás do vidro antes de sair
-  predio._dentro = F && T < 13.2 ? (c) => {
+  E.p.face = E.f; if (F) F.p.face = F.f;
+  return { E, F, ia };
+}
+function cabecaRot(p) { return (p.parts.cabeca || {}).rot || 0; }
+// orelhas reagem com atraso (movimento secundário)
+function secundario(T, st) {
+  const ant = estado(T - 0.12);
+  orelhas(st.E.p, (cabecaRot(st.E.p) - cabecaRot(ant.E.p)) / 0.12, ((st.E.p.bob || 0) - (ant.E.p.bob || 0)) / 0.12 + (st.E.p.y - ant.E.p.y) / 0.12 * -1, T);
+  if (st.F && ant.F) orelhas(st.F.p, (cabecaRot(st.F.p) - cabecaRot(ant.F.p)) / 0.12, ((st.F.p.bob || 0) - (ant.F.p.bob || 0)) / 0.12, T + 1);
+}
+
+// ---------------------------------------------------------------- desenho
+function cenaDemo(ctx, T, st) {
+  const noite = 0.3 + clamp(seg(T, 0, 10) * 0.3);
+  const porta = sm(T, 9.6, 10.1) * (1 - sm(T, 12.8, 13.6) * 0.85);
+  const { E, F, ia } = st;
+  predio._dentro = F && T < 10.3 ? (c) => {
     const [x, y, w, h] = PREDIO.porta;
     c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
-    c.globalAlpha *= sm(T, 12.6, 12.9);
+    c.globalAlpha *= sm(T, 9.7, 10.05);
     drawRig(c, 'f_vestido', F.p);
     c.restore();
   } : null;
   predio(ctx, T + 88, porta, noite);
   predio._dentro = null;
+  // luz que sai pela porta
+  if (porta > 0) { const [x, y, w, h] = PREDIO.porta; glow(ctx, x + w / 2, y + h, 420, '#ffe6b0', 0.35 * porta); }
   const lista = [['m_preta', E.p]];
-  if (F && T >= 13.2) lista.push(['f_vestido', F.p]);
+  if (F && T >= 10.3) lista.push(['f_vestido', F.p]);
   const pts = drawRigs(ctx, lista);
-  // celular
-  if (T > 4.0 && T < 6.6 && E.p.maoFora.D > 0.3) {
+  // celular na mão
+  const mf = E.p.maoFora.D || 0;
+  if (T > 1.6 && T < 3.95 && mf > 0.25) {
     const m = pts[0].maoD;
-    drawPhone(ctx, m.x - 2, m.y - 30, 40, 0.12, { back: true, glow: 0.35 * E.p.maoFora.D });
+    drawPhone(ctx, m.x - 2, m.y - 28, 40, 0.12, { back: true, glow: 0.4 * mf });
   }
-  // corações no abraço / beijo
-  if (ia.hug > 0.5) floatHearts(ctx, T, 15.8, 17.8, 1040, 560, { n: 8, spread: 240, size: 30, seed: 61 });
-  if (ia.kiss > 0.5 && F) {
+  if (ia.hug > 0.6) floatHearts(ctx, T, 15.0, 17.0, (pts[0].head.x + (pts[1] ? pts[1].head.x : 0)) / 2, pts[0].head.y - 60, { n: 7, spread: 220, size: 28, seed: 61 });
+  if (ia.kiss > 0.8 && pts[1]) {
     const f = pts[1].forehead;
-    floatHearts(ctx, T, 18.8, 20, f.x - 20, f.y - 20, { n: 6, spread: 120, size: 26, seed: 71 });
-    sparkles(ctx, T, 18.7, 19.8, f.x - 20, f.y, { n: 10, spread: 150, size: 14 });
+    floatHearts(ctx, T, 18.0, 19.6, f.x - 10, f.y - 30, { n: 6, spread: 120, size: 24, seed: 71 });
+    sparkles(ctx, T, 17.95, 19.0, f.x - 15, f.y, { n: 9, spread: 140, size: 13 });
   }
-  // primeiro plano (paralaxe): arbustos
   return pts;
 }
-function primeiroPlano(ctx, camX, T) {
+// primeiro plano (paralaxe): arbustos e poste, mais rápidos que o fundo
+function primeiroPlano(ctx, camX, camY, z, T) {
   ctx.save();
-  ctx.translate(-(camX - 960) * 0.35, 0);
-  for (const [bx, by, r, c] of [[-60, 1090, 190, '#1f3a26'], [120, 1120, 150, '#2a4a30'], [1880, 1100, 200, '#1f3a26'], [2060, 1080, 160, '#2a4a30']]) {
-    for (let i = 0; i < 6; i++) circle(ctx, bx + Math.cos(i * 1.7) * r * 0.6 + Math.sin(T * 1.3 + i) * 4, by - Math.abs(Math.sin(i * 2.1)) * r * 0.6, r * 0.5, c);
+  ctx.translate(-(camX - 960) * 0.45 * z, -(camY - 560) * 0.2);
+  for (const [bx, by, r, c] of [[-60, 1100, 200, '#1c3524'], [140, 1130, 160, '#26432c'], [1880, 1110, 210, '#1c3524'], [2080, 1090, 170, '#26432c']]) {
+    for (let i = 0; i < 6; i++) circle(ctx, bx + Math.cos(i * 1.7) * r * 0.6 + Math.sin(T * 1.2 + i) * 5, by - Math.abs(Math.sin(i * 2.1)) * r * 0.6, r * 0.5, c);
   }
   ctx.restore();
 }
-function tomada(cx, cy, z) {
+// Tomada: a câmera pode seguir um ponto do personagem (com suavidade)
+function tomada(camFn) {
   return (ctx, T) => {
-    const c = typeof cx === 'function' ? cx(T) : cx, y = typeof cy === 'function' ? cy(T) : cy, zz = typeof z === 'function' ? z(T) : z;
-    ctx.save(); camera(ctx, c, y, zz); cenaDemo(ctx, T); ctx.restore();
-    primeiroPlano(ctx, c, T);
+    const st = estado(T);
+    secundario(T, st);
+    const [cx, cy, z] = camFn(T, st);
+    ctx.save(); camera(ctx, cx, cy, z); cenaDemo(ctx, T, st); ctx.restore();
+    primeiroPlano(ctx, cx, cy, z, T);
   };
 }
-shot(0, 4.0, tomada(T => lerp(760, 920, eio(T, 0, 4)), 580, T => lerp(1.0, 1.08, seg(T, 0, 4))), 0);
-shot(4.0, 6.6, tomada(T => trajetoCam(T), 500, T => lerp(1.9, 2.05, seg(T, 4, 6.6))), 0.25);
-shot(6.6, 12.6, tomada(T => lerp(900, 930, seg(T, 6.6, 12.6)), 600, T => lerp(1.1, 1.22, seg(T, 6.6, 12.6))), 0.25);
-shot(12.6, 15.5, tomada(T => lerp(1040, 1030, seg(T, 12.6, 15.5)), 610, 1.15), 0.25);
-shot(15.5, 20, tomada(1042, T => lerp(600, 560, eio(T, 15.5, 20)), T => lerp(1.4, 2.05, eio(T, 15.5, 20))), 0.3);
-function trajetoCam() { return 860; }
+function cabecaDe(st, quem) {
+  const s = quem === 'F' ? st.F : st.E;
+  const p = pontos(quem === 'F' ? 'f_vestido' : 'm_preta', Object.assign(novaPose({}), s.p, { _M: null }));
+  return p.head;
+}
+// Plano aberto → médio (celular) → médio-aberto → aberto (sentar) → porta → close (olhos) → aberto → médio (abraço) → close (beijo)
+shot(0, 1.6, tomada(T => [lerp(880, 900, seg(T, 0, 1.6)), 570, 1.0]), 0);
+shot(1.6, 3.9, tomada(T => [845, 505, 1.95]));
+shot(3.9, 5.6, tomada(T => [lerp(930, 950, seg(T, 3.9, 5.6)), 560, 1.32]));
+shot(5.6, 9.6, tomada(T => [lerp(880, 870, seg(T, 5.6, 9.6)), lerp(590, 610, seg(T, 5.6, 9.6)), 1.12]));
+shot(9.6, 10.85, tomada(T => [1060, 600, 1.12]));
+shot(10.85, 11.45, tomada((T, st) => { const h = cabecaDe(st, 'E'); return [h.x + 10, h.y + 20, 2.7]; }));
+shot(11.45, 14.6, tomada(T => [lerp(1030, 1045, seg(T, 11.45, 14.6)), 610, 1.12]));
+shot(14.6, 17.1, tomada(T => [1048, lerp(600, 590, seg(T, 14.6, 17.1)), 1.55]));
+shot(17.1, 20, tomada((T, st) => { const a = cabecaDe(st, 'E'), b = cabecaDe(st, 'F'); return [(a.x + b.x) / 2, (a.y + b.y) / 2 + 40, lerp(2.15, 2.3, seg(T, 17.1, 20))]; }));
 
-// ---------------------------------------------------------------- carregamento
+// ---------------------------------------------------------------- carregamento e render
 window.CARREGAR = async function () {
   await carregarFontes();
   await carregarRigs(['m_preta', 'f_vestido']);
@@ -224,9 +279,8 @@ function renderAt(ctx, T) {
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   let i = SHOTS.findIndex(s => T >= s.t0 && T < s.t1);
   if (i < 0) i = SHOTS.length - 1;
-  const s = SHOTS[i];
-  ctx.save(); s.draw(ctx, T); ctx.restore();
+  ctx.save(); SHOTS[i].draw(ctx, T); ctx.restore();
   vignette(ctx, 0.3);
   fade(ctx, 1 - seg(T, 0, 0.6));
-  fade(ctx, seg(T, 19.4, 20));
+  fade(ctx, seg(T, 19.3, 20));
 }

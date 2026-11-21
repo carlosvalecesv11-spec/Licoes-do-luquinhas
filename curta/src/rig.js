@@ -78,8 +78,12 @@ function resolverIK(n, pose) {
     const newFo = Math.atan2(S[1] + dy - fora[1], S[0] + dx - fora[0]);
     const k = pose.ik == null ? 1 : (pose.ik[lado] == null ? 1 : pose.ik[lado]);
     const rb = (pose.parts['braco' + lado] || {}).rot || 0, ra = (pose.parts['antebraco' + lado] || {}).rot || 0;
-    part(pose, 'braco' + lado, { rot: lerp(rb, angNorm(r1), k) });
-    part(pose, 'antebraco' + lado, { rot: lerp(ra, angNorm(newFo - restFo - r1), k) });
+    // manga bufante (ela) é o ombro: gira pouco; o antebraço compensa
+    const lim = n === 'f_vestido' ? 0.35 : 3;
+    const r1c = clamp(angNorm(r1), -lim, lim);
+    const extra = angNorm(r1) - r1c;
+    part(pose, 'braco' + lado, { rot: lerp(rb, r1c, k) });
+    part(pose, 'antebraco' + lado, { rot: lerp(ra, angNorm(newFo - restFo - r1) + extra, k) });
   }
 }
 function angNorm(a) { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; }
@@ -171,7 +175,10 @@ function rosto(ctx, n, pose) {
     ctx.drawImage(im.fundo, o.fundo.x, o.fundo.y);
     ctx.save();
     ctx.beginPath(); ctx.ellipse(o.cx, o.cy, o.rx * 0.97, o.ry * 0.97, 0, 0, TAU); ctx.clip();
-    ctx.drawImage(im.iris, o.iris.x + look[0] * o.rx * 0.36, o.iris.y + look[1] * o.ry * 0.32);
+    const sc = f.iris || 1; // pupila dilatada quando se emociona
+    const ix = o.iris.x + look[0] * o.rx * 0.36, iy = o.iris.y + look[1] * o.ry * 0.32;
+    ctx.translate(o.icx + (ix - o.iris.x), o.icy + (iy - o.iris.y)); ctx.scale(sc, sc); ctx.translate(-(o.icx + (ix - o.iris.x)), -(o.icy + (iy - o.iris.y)));
+    ctx.drawImage(im.iris, ix, iy);
     ctx.restore();
   });
   // sobrancelhas (ele não tem sobrancelhas desenhadas: aparecem só na emoção)
@@ -259,6 +266,26 @@ function sentar(pose, n, k) {
   addPart(pose, 'coxaE', 'rot', 0.22 * k); addPart(pose, 'coxaD', 'rot', -0.22 * k);
   addPart(pose, 'canelaE', 'dy', -(1 - sy) * 235); addPart(pose, 'canelaD', 'dy', -(1 - sy) * 235);
   addPart(pose, 'canelaE', 'rot', -0.24 * k); addPart(pose, 'canelaD', 'rot', 0.24 * k);
+  return pose;
+}
+// Transferência de peso entre as pernas (k: -1 = perna esquerda, +1 = direita)
+function peso(pose, n, k) {
+  addPart(pose, 'quadril', 'dx', 16 * k);
+  addPart(pose, 'quadril', 'rot', -0.014 * k);
+  addPart(pose, 'tronco', 'rot', 0.012 * k);
+  addPart(pose, 'cabeca', 'rot', -0.01 * k);
+  if (n === 'm_preta') {
+    addPart(pose, 'coxaE', 'rot', 0.015 * k); addPart(pose, 'coxaD', 'rot', 0.015 * k);
+    if (k > 0) addPart(pose, 'canelaE', 'dy', -16 * k); else addPart(pose, 'canelaD', 'dy', 16 * k);
+  } else {
+    if (k > 0) addPart(pose, 'pernaE', 'dy', -12 * k); else addPart(pose, 'pernaD', 'dy', 12 * k);
+  }
+  return pose;
+}
+// Orelhas: movimento secundário (atraso em relação à cabeça e ao corpo)
+function orelhas(pose, rotCabecaVel, bobVel, T) {
+  const a = clamp(-rotCabecaVel * 0.5 - bobVel * 0.0025, -0.14, 0.14) + Math.sin(T * 1.3) * 0.012;
+  addPart(pose, 'orelhaE', 'rot', a); addPart(pose, 'orelhaD', 'rot', -a);
   return pose;
 }
 // Curva com antecipação (recuo antes) e acomodação (passa um pouco e volta)
