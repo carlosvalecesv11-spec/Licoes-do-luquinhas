@@ -3,5 +3,5 @@ fotos/*.jpg
 fotos/*.jpeg
 fotos/*.png
 saida/
-audio/trilha.wav
+audio/*.wav
 node_modules/
