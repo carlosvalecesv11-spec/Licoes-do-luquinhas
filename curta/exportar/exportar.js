@@ -7,14 +7,15 @@ const fs = require('fs');
 const path = require('path');
 const { abrirPagina, RAIZ } = require('../ferramentas/servir');
 
-const FPS = 30, DURACAO = 180, TOTAL = FPS * DURACAO;
+const FPS = 30, DURACAO = parseFloat(process.env.DURACAO || '180'), TOTAL = Math.round(FPS * DURACAO);
+const PAGINA = process.env.PAGINA || 'index.html';
 const saida = path.resolve(process.argv[2] || path.join(RAIZ, 'saida', 'nosso_amor_180s.mp4'));
 const nW = parseInt(process.argv[3] || '3', 10);
-const tmp = path.join(path.dirname(saida), '.partes');
+const tmp = path.join(path.dirname(saida), '.partes_' + path.basename(saida, '.mp4'));
 fs.mkdirSync(tmp, { recursive: true });
 
 async function worker(b, id, f0, f1) {
-  const pg = await abrirPagina(b, 'index.html');
+  const pg = await abrirPagina(b, PAGINA);
   await pg.waitForFunction(() => window.CURTA_PRONTO, null, { timeout: 120000 });
   const arq = path.join(tmp, `parte_${id}.mp4`);
   const ff = spawn('ffmpeg', ['-v', 'error', '-y', '-f', 'image2pipe', '-c:v', 'mjpeg', '-framerate', String(FPS), '-i', '-',
@@ -39,7 +40,7 @@ async function worker(b, id, f0, f1) {
   await b.close();
   const lista = path.join(tmp, 'lista.txt');
   fs.writeFileSync(lista, partes.map(p => `file '${p}'`).join('\n'));
-  const audio = path.join(RAIZ, 'audio', 'trilha.wav');
+  const audio = path.join(RAIZ, process.env.AUDIO || 'audio/trilha.wav');
   execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', lista, '-i', audio,
     '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', saida], { stdio: 'inherit' });
   fs.rmSync(tmp, { recursive: true, force: true });

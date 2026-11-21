@@ -7,6 +7,8 @@
   const btPlay = document.getElementById('play'), busca = document.getElementById('busca'), tempo = document.getElementById('tempo');
   const params = new URLSearchParams(location.search);
   let T = 0, tocando = false, inicio = 0, semAudio = false;
+  const DUR = window.DURACAO_FILME || DURACAO;
+  busca.max = DUR;
   const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
   function agora() {
@@ -16,13 +18,13 @@
   }
   function quadro() {
     T = agora();
-    if (T >= DURACAO) { T = DURACAO - 0.001; pausar(); }
+    if (T >= DUR) { T = DUR - 0.001; pausar(); }
     renderAt(ctx, T);
-    busca.value = T; tempo.textContent = `${fmt(T)} / ${fmt(DURACAO)}`;
+    busca.value = T; tempo.textContent = `${fmt(T)} / ${fmt(DUR)}`;
     if (tocando) requestAnimationFrame(quadro);
   }
   function tocar() {
-    if (T >= DURACAO - 0.01) T = 0;
+    if (T >= DUR - 0.01) T = 0;
     tocando = true; btPlay.textContent = '❚❚';
     inicio = performance.now() - T * 1000;
     audio.currentTime = T;
@@ -30,7 +32,7 @@
     requestAnimationFrame(quadro);
   }
   function pausar() { tocando = false; btPlay.textContent = '▶'; audio.pause(); }
-  function ir(t) { T = clamp(t, 0, DURACAO - 0.001); audio.currentTime = T; inicio = performance.now() - T * 1000; if (!tocando) renderAt(ctx, T); tempo.textContent = `${fmt(T)} / ${fmt(DURACAO)}`; }
+  function ir(t) { T = clamp(t, 0, DUR - 0.001); audio.currentTime = T; inicio = performance.now() - T * 1000; if (!tocando) renderAt(ctx, T); tempo.textContent = `${fmt(T)} / ${fmt(DUR)}`; }
 
   btPlay.onclick = () => (tocando ? pausar() : tocar());
   document.getElementById('reiniciar').onclick = () => { ir(0); if (!tocando) tocar(); };
@@ -46,7 +48,7 @@
     renderJPEG(t, q = 0.93) { renderAt(ctx, t); return tela.toDataURL('image/jpeg', q); },
     render(t) { renderAt(ctx, t); },
   };
-  carregarTudo().then(() => {
+  (window.CARREGAR || carregarTudo)().then(() => {
     document.getElementById('carregando').remove();
     const t0 = parseFloat(params.get('t') || '0');
     ir(t0);
