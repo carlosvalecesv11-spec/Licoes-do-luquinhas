@@ -1,0 +1,150 @@
+{
+ "ele_camisa_preta": {
+  "canvas": [
+   1024,
+   1536
+  ],
+  "linha_dos_pes": 1492,
+  "vista": "frente",
+  "pivos": {
+   "pescoço": [
+    535,
+    452
+   ],
+   "ombro esq.": [
+    330,
+    528
+   ],
+   "ombro dir.": [
+    690,
+    528
+   ],
+   "cotovelo esq.": [
+    300,
+    660
+   ],
+   "cotovelo dir.": [
+    718,
+    660
+   ],
+   "pulso esq.": [
+    292,
+    880
+   ],
+   "pulso dir.": [
+    726,
+    880
+   ],
+   "cintura": [
+    505,
+    900
+   ],
+   "quadril esq.": [
+    405,
+    950
+   ],
+   "quadril dir.": [
+    595,
+    950
+   ],
+   "joelho esq.": [
+    400,
+    1185
+   ],
+   "joelho dir.": [
+    595,
+    1185
+   ],
+   "tornozelo esq.": [
+    392,
+    1395
+   ],
+   "tornozelo dir.": [
+    605,
+    1395
+   ],
+   "orelha esq.": [
+    342,
+    285
+   ],
+   "orelha dir.": [
+    684,
+    285
+   ]
+  }
+ },
+ "ela_vestido_amarelo": {
+  "canvas": [
+   1024,
+   1536
+  ],
+  "linha_dos_pes": 1501,
+  "vista": "frente",
+  "pivos": {
+   "pescoço": [
+    502,
+    552
+   ],
+   "ombro esq.": [
+    392,
+    596
+   ],
+   "ombro dir.": [
+    612,
+    596
+   ],
+   "cotovelo esq.": [
+    355,
+    715
+   ],
+   "cotovelo dir.": [
+    648,
+    715
+   ],
+   "pulso esq.": [
+    330,
+    930
+   ],
+   "pulso dir.": [
+    672,
+    930
+   ],
+   "cintura": [
+    500,
+    790
+   ],
+   "quadril esq.": [
+    432,
+    1010
+   ],
+   "quadril dir.": [
+    568,
+    1010
+   ],
+   "joelho esq.": [
+    428,
+    1265
+   ],
+   "joelho dir.": [
+    572,
+    1265
+   ],
+   "tornozelo esq.": [
+    425,
+    1430
+   ],
+   "tornozelo dir.": [
+    575,
+    1430
+   ],
+   "orelha esq.": [
+    306,
+    350
+   ],
+   "orelha dir.": [
+    694,
+    345
+   ]
+  }
+ }
+}
