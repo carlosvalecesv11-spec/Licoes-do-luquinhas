@@ -244,7 +244,7 @@ function andar(pose, n, fase, amp = 1, bracos = true) {
   addPart(pose, 'cabeca', 'rot', 0.02 * c * amp);
   if (n === 'm_preta') {
     addPart(pose, 'coxaE', 'rot', 0.07 * s * amp); addPart(pose, 'coxaD', 'rot', 0.07 * s * amp);
-    addPart(pose, 'canelaE', 'dy', -60 * Math.max(0, s) * amp); addPart(pose, 'canelaD', 'dy', -60 * Math.max(0, -s) * amp);
+    addPart(pose, 'canelaE', 'dy', -74 * Math.max(0, s) * amp); addPart(pose, 'canelaD', 'dy', -74 * Math.max(0, -s) * amp);
     addPart(pose, 'canelaE', 'rot', -0.06 * Math.max(0, s) * amp); addPart(pose, 'canelaD', 'rot', 0.06 * Math.max(0, -s) * amp);
   } else {
     addPart(pose, 'pernaE', 'rot', 0.07 * s * amp); addPart(pose, 'pernaD', 'rot', 0.07 * s * amp);

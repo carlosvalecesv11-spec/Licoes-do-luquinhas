@@ -73,7 +73,7 @@ function estadoEle(T) {
     sentar(p, 'm_preta', Math.min(1, sit));
     const tmp = matrizes('m_preta', p);
     const jE = tmp.canelaE.transformPoint(new DOMPoint(400, 1185)), jD = tmp.canelaD.transformPoint(new DOMPoint(595, 1185));
-    const apoio = K(T, [[7.4, 0], [8.2, 1], [11.7, 1], [12.0, 0]]);
+    const apoio = K(T, [[6.35, 0], [6.95, 0.75], [7.7, 1], [11.7, 1], [12.0, 0]]);
     p.maoFora.E = p.maoFora.D = Math.max(apoio, p.maoFora.D || 0);
     p.ik = { E: apoio, D: Math.max(apoio, (p.ik || {}).D || 0) };
     p.maos.E = [jE.x + 8, jE.y + 2]; p.maos.D = [jD.x - 8, jD.y + 2];
@@ -103,7 +103,8 @@ function estadoEle(T) {
     p.ik = { E: Math.max(solta, (p.ik || {}).E || 0), D: Math.max(solta, (p.ik || {}).D || 0) };
     const by = p.y - (p.bob || 0);
     p.maos.E = [wk.x - lerp(0.13, 0.34, abre) * EH + sw * 22, by - lerp(0.36, 0.52, abre) * EH - Math.abs(sw) * 10];
-    p.maos.D = [wk.x + lerp(0.13, 0.36, abre) * EH + sw * 22, by - lerp(0.36, 0.54, abre) * EH - Math.abs(sw) * 10];
+    const alcanca = sm(T, 14.25, 14.7);
+    p.maos.D = [wk.x + lerp(0.13, 0.36, abre) * EH + alcanca * 0.1 * EH + sw * 22, by - lerp(0.36, 0.54, abre) * EH + alcanca * 0.06 * EH - Math.abs(sw) * 10];
     p.dedos = { E: 0.3 + 0.5 * abre, D: 0.3 + 0.5 * abre };
     addPart(p, 'tronco', 'rot', -0.02 * sw);
     f.look = [0.85, -0.12]; f.mouth = 'laugh'; f.open = 0.55; f.sparkle = 1; f.iris = 1.12; f.blush = 0.4 * abre;
@@ -142,9 +143,10 @@ function estadoEla(T) {
 function interacao(T, E, F) {
   const hug = sm(T, 14.6, 15.2);
   if (hug <= 0) return { hug: 0, kiss: 0 };
-  const recosta = K(T, [[14.9, 0], [15.4, 1], [16.6, 1], [17.1, 0.15], [20, 0.15]]);  // ela encosta a cabeça
+  const recosta = K(T, [[14.9, 0], [15.4, 1], [16.6, 1], [17.1, 0.1], [18.9, 0.1], [19.5, 0.55], [20, 0.55]]);  // ela encosta a cabeça
   const afasta = K(T, [[16.2, 0], [16.8, 1], [20, 1]]);                                 // ele afasta a cabeça
-  const kiss = K(T, [[17.2, 0], [18.0, 1], [18.9, 1], [19.5, 0.6], [20, 0.6]]);           // inclina e beija
+  const kiss = K(T, [[17.2, 0], [18.0, 1], [18.9, 1], [19.5, 0.55], [20, 0.55]]);         // inclina e beija
+  const repousa = K(T, [[18.9, 0], [19.5, 1]]);                                         // bochecha dele na cabeça dela
   const sway = Math.sin((T - 14.6) * 1.8) * 0.018 * hug;
   E.p.x += 20 * kiss; F.p.x -= 15 * kiss;
   E.p.lean = (E.p.lean || 0) + 0.035 * hug + sway + 0.06 * kiss;
@@ -169,14 +171,15 @@ function interacao(T, E, F) {
   F.p.z.antebracoD = 0.98; F.p.z.maoD = 0.985;
   F.p.dedos = { E: 0.3, D: 0.35 };
   // rostos
-  E.f = { blink: blinkAt(T, 3), mouth: kiss > 0.45 ? 'kiss' : 'smile', blush: 0.55, sparkle: 0.4,
-    happyEyes: (T < 16.3 || kiss > 0.55) ? 1 : 0, look: [0.65, 0.75] };
+  E.f = { blink: blinkAt(T, 3), mouth: kiss > 0.45 && repousa < 0.5 ? 'kiss' : 'smile', blush: 0.55, sparkle: 0.4,
+    happyEyes: (T < 16.3 || kiss > 0.55 || repousa > 0.3) ? 1 : 0, look: [0.65, 0.75] };
   F.f = { blink: blinkAt(T, 5), mouth: 'smile', blush: 0.6 + 0.3 * kiss, sparkle: 0.7,
     happyEyes: (recosta > 0.5 || kiss > 0.35) ? 1 : 0, look: [-0.7, -0.75] };
   // cabeças: ela encosta no peito dele; ele apoia o queixo, afasta, olha e inclina
-  addPart(F.p, 'cabeca', 'rot', -0.3 * recosta - 0.1 * kiss);
-  addPart(F.p, 'cabeca', 'dx', -28 * recosta); addPart(F.p, 'cabeca', 'dy', 8 * recosta);
-  addPart(E.p, 'cabeca', 'rot', 0.12 * hug * (1 - afasta) - 0.03 * afasta * (1 - kiss) + 0.24 * kiss);
+  addPart(F.p, 'cabeca', 'rot', -0.22 * recosta - 0.1 * kiss);
+  addPart(F.p, 'cabeca', 'dx', -34 * recosta); addPart(F.p, 'cabeca', 'dy', -12 * recosta);
+  addPart(E.p, 'cabeca', 'rot', 0.16 * hug * (1 - afasta) - 0.03 * afasta * (1 - kiss) + 0.24 * kiss * (1 - repousa) + 0.17 * repousa);
+  addPart(E.p, 'cabeca', 'dy', 8 * hug * (1 - afasta) + 10 * repousa);
   addPart(E.p, 'cabeca', 'dy', -8 * afasta * (1 - kiss));
   addPart(E.p, 'cabeca', 'dx', 10 * kiss);
   addPart(E.p, 'tronco', 'rot', 0.02 * kiss);
