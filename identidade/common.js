@@ -322,7 +322,7 @@ function drawLuq(p) {
   // pants
   S(jeans, () => { ctx.moveTo(376, 1000); ctx.lineTo(664, 1000); ctx.lineTo(668, 1356); ctx.lineTo(536, 1356); ctx.lineTo(520, 1070); ctx.lineTo(504, 1356); ctx.lineTo(372, 1356); ctx.closePath(); });
   // arms + sleeves (behind torso edges)
-  const arm = (side, ang) => {
+  const arm = (side, ang, peace) => {
     ctx.save();
     ctx.translate(520 + side * 150, 712); ctx.scale(side, 1); // side -1 = left (mirror so local -x is outward)
     ctx.scale(-1, 1); // local: outward = -x
@@ -330,7 +330,17 @@ function drawLuq(p) {
     // skin arm, hinged at the sleeve opening
     ctx.save(); ctx.translate(-66, 126); ctx.rotate(ang * 0.7);
     S(skin, () => { ctx.moveTo(-32, -10); ctx.quadraticCurveTo(-30, 72, -28, 146); ctx.lineTo(34, 146); ctx.quadraticCurveTo(32, 72, 26, -6); ctx.closePath(); });
+    if (peace) {
+      // two fingers in a V, pointing along the arm
+      for (const [x1, x2] of [[-16, -44], [16, 40]]) {
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x1, 190); ctx.lineTo(x2, 292);
+        ctx.lineWidth = 34 + OL * 2; ctx.strokeStyle = INK; ctx.stroke();
+        ctx.lineWidth = 34; ctx.strokeStyle = skin; ctx.stroke();
+      }
+    }
     S(skin, ell(4, 174, 58, 58));
+    if (peace) { ctx.strokeStyle = 'rgba(38,34,47,0.6)'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(-30, 150); ctx.quadraticCurveTo(4, 140, 36, 152); ctx.stroke(); }
     ctx.restore();
     // sleeve
     S(shirt, () => { ctx.moveTo(50, -6); ctx.quadraticCurveTo(-50, 0, -112, 100); ctx.quadraticCurveTo(-126, 128, -98, 136); ctx.quadraticCurveTo(-40, 150, 14, 128); ctx.closePath(); });
@@ -347,7 +357,7 @@ function drawLuq(p) {
   ctx.strokeStyle = 'rgba(38,34,47,0.35)'; ctx.lineWidth = 6;
   ctx.beginPath(); ctx.moveTo(420, 760); ctx.quadraticCurveTo(395, 880, 378, 990); ctx.moveTo(620, 760); ctx.quadraticCurveTo(645, 880, 662, 990); ctx.stroke();
   arm(-1, p.armL || 0);
-  arm(1, p.armR || 0);
+  arm(1, p.armR || 0, p.peaceR);
   // collar
   S(skin, () => { ctx.moveTo(445, 684); ctx.quadraticCurveTo(520, 740, 595, 684); ctx.closePath(); }, 10);
   // head
@@ -385,8 +395,8 @@ function drawLuq(p) {
   const lk = (p.look || 0) * 16;
   for (const sx of [-1, 1]) {
     const cx = 520 + sx * 120, cy = 428;
-    if (p.blink) {
-      ctx.strokeStyle = INK; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(cx - 60, cy); ctx.quadraticCurveTo(cx, cy + 34, cx + 60, cy); ctx.stroke();
+    if (p.blink || (p.wink && sx === 1)) {
+      ctx.strokeStyle = INK; ctx.lineWidth = 12; ctx.beginPath(); if (p.wink && !p.blink) { ctx.moveTo(cx - 58, cy + 10); ctx.quadraticCurveTo(cx, cy - 40, cx + 58, cy + 10); } else { ctx.moveTo(cx - 60, cy); ctx.quadraticCurveTo(cx, cy + 34, cx + 60, cy); } ctx.stroke();
       continue;
     }
     S('#ffffff', ell(cx, cy, 84, 84));
