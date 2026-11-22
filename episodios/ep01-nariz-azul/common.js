@@ -322,7 +322,7 @@ function drawLuq(p) {
   // pants
   S(jeans, () => { ctx.moveTo(376, 1000); ctx.lineTo(664, 1000); ctx.lineTo(668, 1356); ctx.lineTo(536, 1356); ctx.lineTo(520, 1070); ctx.lineTo(504, 1356); ctx.lineTo(372, 1356); ctx.closePath(); });
   // arms + sleeves (behind torso edges)
-  const arm = (side, ang, peace) => {
+  const arm = (side, ang, peace, thumb) => {
     ctx.save();
     ctx.translate(520 + side * 150, 712); ctx.scale(side, 1); // side -1 = left (mirror so local -x is outward)
     ctx.scale(-1, 1); // local: outward = -x
@@ -340,6 +340,18 @@ function drawLuq(p) {
       }
     }
     S(skin, ell(4, 174, 58, 58));
+    if (thumb) {
+      // thumbs up: thumb always points up on screen, whatever the arm angle
+      ctx.save(); ctx.translate(4, 174); ctx.rotate(-ang);
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(14, -30); ctx.lineTo(14, -108);
+      ctx.lineWidth = 36 + OL * 2; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.lineWidth = 36; ctx.strokeStyle = skin; ctx.stroke();
+      S(skin, ell(0, 0, 58, 58));
+      ctx.strokeStyle = 'rgba(38,34,47,0.55)'; ctx.lineWidth = 8;
+      for (const yy of [-14, 10, 32]) { ctx.beginPath(); ctx.moveTo(-40, yy); ctx.quadraticCurveTo(-14, yy + 6, 10, yy); ctx.stroke(); }
+      ctx.restore();
+    }
     if (peace) { ctx.strokeStyle = 'rgba(38,34,47,0.6)'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(-30, 150); ctx.quadraticCurveTo(4, 140, 36, 152); ctx.stroke(); }
     ctx.restore();
     // sleeve
@@ -357,7 +369,7 @@ function drawLuq(p) {
   ctx.strokeStyle = 'rgba(38,34,47,0.35)'; ctx.lineWidth = 6;
   ctx.beginPath(); ctx.moveTo(420, 760); ctx.quadraticCurveTo(395, 880, 378, 990); ctx.moveTo(620, 760); ctx.quadraticCurveTo(645, 880, 662, 990); ctx.stroke();
   arm(-1, p.armL || 0);
-  arm(1, p.armR || 0, p.peaceR);
+  arm(1, p.armR || 0, p.peaceR, p.thumbR);
   // collar
   S(skin, () => { ctx.moveTo(445, 684); ctx.quadraticCurveTo(520, 740, 595, 684); ctx.closePath(); }, 10);
   // head
