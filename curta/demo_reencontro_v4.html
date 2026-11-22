@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo do Reencontro</title>
+<style>
+  :root { --bg: #0b0b10; --fg: #f3e9d8; --ac: #f2c75a; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; }
+  #palco { position: fixed; inset: 0 0 64px 0; display: flex; align-items: center; justify-content: center; }
+  canvas { max-width: 100%; max-height: 100%; aspect-ratio: 16 / 9; background: #000; }
+  #barra { position: fixed; left: 0; right: 0; bottom: 0; height: 64px; display: flex; gap: 12px; align-items: center; padding: 0 16px; box-sizing: border-box; background: #15151c; }
+  button { background: #2a2a36; color: var(--fg); border: 0; border-radius: 8px; height: 40px; min-width: 44px; padding: 0 14px; font-size: 16px; cursor: pointer; }
+  button:hover { background: #383848; }
+  input[type=range] { flex: 1; accent-color: var(--ac); }
+  #tempo { font-variant-numeric: tabular-nums; min-width: 100px; text-align: right; }
+  #carregando { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  body.cheia #barra { display: none; } body.cheia #palco { inset: 0; }
+</style>
+</head>
+<body>
+<div id="palco"><canvas id="tela" width="1920" height="1080"></canvas></div>
+<div id="barra">
+  <button id="play" title="Reproduzir / pausar">▶</button>
+  <button id="reiniciar" title="Reiniciar">⟲</button>
+  <input id="busca" type="range" min="0" max="20" step="0.01" value="0">
+  <span id="tempo">0:00 / 0:20</span>
+  <button id="cheia" title="Tela cheia">⛶</button>
+</div>
+<div id="carregando">Carregando…</div>
+<audio id="trilha" src="audio/demo_reencontro.m4a" preload="auto"></audio>
+
+<script src="src/util.js"></script>
+<script src="src/fontes.js"></script>
+<script src="src/personagens.js"></script>
+<script src="src/objetos.js"></script>
+<script src="src/cenarios.js"></script>
+<script src="assets/rig/m_perfil/rig.js"></script>
+<script src="assets/rig/f_perfil/rig.js"></script>
+<script src="assets/sprites/ele_caminhada/quadros.js"></script>
+<script src="src/rig.js"></script>
+<script>function carregarImagem(src) { return new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error('Falha ao carregar ' + src)); i.src = src; }); }</script>
+<script src="src/rig_perfil.js"></script>
+<script src="src/demo_reencontro_v4.js"></script>
+<script src="src/player.js"></script>
+</body>
+</html>
