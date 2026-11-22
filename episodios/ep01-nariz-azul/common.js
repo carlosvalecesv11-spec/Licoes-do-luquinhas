@@ -441,3 +441,68 @@ function drawLuq(p) {
   ctx.restore(); // head
   ctx.restore();
 }
+
+// ---------- Pinscher dog (black & tan), reference coords: paws at y~1240 ----------
+function drawPin(p) {
+  const OL = 12, S = (f, fn, lw = OL) => shape(f, fn, lw);
+  const blk = '#3b3942', blk2 = '#2e2c34', tan = '#e9a35c', light = '#f7dcb4', pink = '#f0967e';
+  ctx.save(); ctx.translate(p.x, p.y); const sc = (p.s || 1) * 0.5; ctx.scale(sc * (p.flip ? -1 : 1), sc); ctx.translate(-560, -1240);
+  const t = p.t || 0;
+  ctx.fillStyle = 'rgba(0,0,0,0.13)'; ctx.beginPath(); ctx.ellipse(500, 1240, 300, 28, 0, 0, 7); ctx.fill();
+  // tapered leg with tan "sock" and light paw
+  const leg = (x, top, dx, col) => {
+    const bx = x + dx;
+    const path = () => { ctx.moveTo(x - 40, top); ctx.quadraticCurveTo(x - 44 + dx * 0.4, top + 160, bx - 26, 1196); ctx.lineTo(bx + 26, 1196); ctx.quadraticCurveTo(x + 40 + dx * 0.6, top + 160, x + 40, top); ctx.closePath(); };
+    S(col, path);
+    ctx.save(); ctx.beginPath(); path(); ctx.clip();
+    ctx.fillStyle = tan; ctx.beginPath(); ctx.moveTo(x - 80, 1240); ctx.lineTo(x - 80, top + (1196 - top) * 0.52); ctx.lineTo(x + dx * 0.6, top + (1196 - top) * 0.38); ctx.lineTo(x + 90, top + (1196 - top) * 0.5); ctx.lineTo(x + 90, 1240); ctx.closePath(); ctx.fill();
+    ctx.restore(); S(null, path);
+    S(light, () => { ctx.moveTo(bx - 50, 1238); ctx.quadraticCurveTo(bx - 52, 1176, bx, 1174); ctx.quadraticCurveTo(bx + 58, 1176, bx + 60, 1238); ctx.closePath(); });
+    ctx.strokeStyle = 'rgba(60,40,30,0.7)'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(bx - 8, 1210); ctx.lineTo(bx - 8, 1236); ctx.moveTo(bx + 20, 1208); ctx.lineTo(bx + 20, 1236); ctx.stroke();
+  };
+  leg(350, 900, -30, blk2); leg(650, 910, 20, blk2); leg(250, 860, -50, blk); leg(560, 920, 30, blk);
+  ctx.save(); ctx.translate(0, 60);
+  // tail
+  ctx.save(); ctx.translate(290, 700); ctx.rotate(Math.sin(t * 9) * 0.15);
+  ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-120, -110, -60, -330, 120, -300);
+  ctx.lineWidth = 58 + OL * 2; ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = 58; ctx.strokeStyle = blk; ctx.stroke();
+  ctx.lineWidth = 12; ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.moveTo(-60, -90); ctx.bezierCurveTo(-80, -170, -40, -250, 30, -276); ctx.stroke();
+  ctx.restore();
+  // body
+  S(blk, () => { ctx.moveTo(270, 690); ctx.bezierCurveTo(270, 610, 420, 610, 520, 655); ctx.bezierCurveTo(600, 690, 680, 650, 730, 700); ctx.bezierCurveTo(800, 780, 770, 880, 700, 905); ctx.bezierCurveTo(560, 940, 380, 925, 300, 885); ctx.bezierCurveTo(210, 840, 225, 750, 270, 690); ctx.closePath(); });
+  S(tan, () => { ctx.moveTo(610, 790); ctx.quadraticCurveTo(665, 760, 705, 805); ctx.quadraticCurveTo(740, 772, 772, 790); ctx.quadraticCurveTo(760, 870, 705, 900); ctx.quadraticCurveTo(645, 870, 610, 790); ctx.closePath(); }, 0);
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 16; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(330, 660); ctx.quadraticCurveTo(400, 640, 470, 668); ctx.stroke();
+  // head
+  ctx.save(); ctx.translate(760, 680); ctx.rotate(p.tilt || 0); ctx.translate(-760, -680);
+  for (const [bx1, by1, tx, ty, bx2, by2] of [[580, 400, 510, 110, 700, 300], [860, 290, 930, 60, 1000, 340]]) {
+    S(blk, () => { ctx.moveTo(bx1, by1); ctx.quadraticCurveTo(tx - 30, ty + 60, tx, ty); ctx.quadraticCurveTo(tx + 50, ty + 60, bx2, by2); ctx.closePath(); });
+    const cx = (bx1 + bx2 + tx) / 3, cy = (by1 + by2 + ty) / 3;
+    ctx.fillStyle = pink; ctx.beginPath(); ctx.moveTo(cx + (bx1 - cx) * 0.55, cy + (by1 - cy) * 0.55); ctx.quadraticCurveTo(cx + (tx - cx) * 0.6 - 18, cy + (ty - cy) * 0.6 + 40, cx + (tx - cx) * 0.85, cy + (ty - cy) * 0.85); ctx.quadraticCurveTo(cx + (tx - cx) * 0.6 + 30, cy + (ty - cy) * 0.6 + 40, cx + (bx2 - cx) * 0.55, cy + (by2 - cy) * 0.55); ctx.closePath(); ctx.fill();
+  }
+  S('#9cc48a', () => { ctx.moveTo(620, 640); ctx.quadraticCurveTo(700, 715, 800, 690); ctx.lineTo(808, 728); ctx.quadraticCurveTo(700, 765, 608, 680); ctx.closePath(); }, 10);
+  S(blk, ell(800, 470, 215, 205));
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 18; ctx.beginPath(); ctx.moveTo(710, 300); ctx.quadraticCurveTo(790, 268, 870, 290); ctx.stroke();
+  // cheek + brow tan marks
+  ctx.fillStyle = tan; ctx.beginPath(); ctx.ellipse(690, 585, 70, 48, 0.2, 0, 7); ctx.ellipse(745, 362, 46, 22, -0.2, 0, 7); ctx.ellipse(935, 338, 34, 18, -0.1, 0, 7); ctx.fill();
+  // mouth (under the snout)
+  const open = p.talk ? 0.5 + p.talk * 0.7 : 1;
+  S('#7a2233', () => { ctx.moveTo(770, 585); ctx.quadraticCurveTo(860, 615, 960, 590); ctx.quadraticCurveTo(935, 590 + 90 * open, 860, 594 + 90 * open); ctx.quadraticCurveTo(785, 588 + 70 * open, 770, 585); ctx.closePath(); }, 10);
+  ctx.save(); ctx.beginPath(); ctx.moveTo(770, 585); ctx.quadraticCurveTo(860, 615, 960, 590); ctx.quadraticCurveTo(935, 590 + 90 * open, 860, 594 + 90 * open); ctx.quadraticCurveTo(785, 588 + 70 * open, 770, 585); ctx.clip();
+  ctx.fillStyle = '#ff8fa0'; ctx.beginPath(); ctx.ellipse(860, 590 + 85 * open, 54, 34, 0, 0, 7); ctx.fill(); ctx.restore();
+  // snout
+  S(tan, () => { ctx.moveTo(830, 522); ctx.quadraticCurveTo(910, 492, 990, 500); ctx.quadraticCurveTo(1048, 526, 1016, 572); ctx.quadraticCurveTo(950, 606, 860, 596); ctx.quadraticCurveTo(806, 582, 815, 546); ctx.closePath(); });
+  // eyes
+  const eye = (cx, cy, r) => {
+    if (p.blink) { ctx.strokeStyle = INK; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(cx - r, cy); ctx.quadraticCurveTo(cx, cy + r * 0.5, cx + r, cy); ctx.stroke(); return; }
+    S('#ffffff', ell(cx, cy, r, r * 1.05));
+    ctx.fillStyle = '#3a2316'; ctx.beginPath(); ctx.arc(cx + 4, cy + 4, r * 0.78, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx + r * 0.3, cy - r * 0.28, r * 0.26, 0, 7); ctx.arc(cx - r * 0.3, cy + r * 0.36, r * 0.1, 0, 7); ctx.fill();
+  };
+  eye(745, 440, 72); eye(945, 405, 48);
+  // nose
+  S(INK, ell(1000, 518, 40, 28), 0);
+  ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.ellipse(988, 508, 12, 7, -0.2, 0, 7); ctx.fill();
+  ctx.restore();
+  ctx.restore();
+  ctx.restore();
+}

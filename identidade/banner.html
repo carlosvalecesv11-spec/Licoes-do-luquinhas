@@ -29,18 +29,23 @@ function cloud(x, y, s) {
 }
 function draw(showSafe) {
   const c = document.createElement('canvas'); c.width = 2560; c.height = 1440; document.body.appendChild(c); ctx = c.getContext('2d');
-  rays(1750, 760, 2560, 1440, '#7cc6ff', P.deep, 28);
-  // clouds & stars (decor, ok to be cropped)
-  cloud(260, 300, 1.6); cloud(2300, 360, 1.3); cloud(700, 1150, 1.2); cloud(2050, 1180, 1.0); cloud(560, 470, 0.9);
-  star(560, 600, 50, P.yellow, 0.2); star(2010, 560, 46, P.orange, -0.2); star(1500, 880, 30, '#ffffff', 0.1);
-  // ground hills at bottom (visible on TV / desktop)
-  shape('#4fae55', ell(2100, 1560, 1000, 320), 8);
-  shape('#5fbf62', ell(700, 1540, 1100, 300), 8);
-  // character (head + V sign inside safe area)
-  person({ ...LUQ, x: 1720, y: 1385, s: 1.5, expr: 'grin', armR: 2.15, thumbR: true });
-  // logo + tagline (inside safe area: x 507..2053, y 508..931)
-  txt('LIÇÕES DO', 1060, 630, 120, '#ffffff', -0.03, 0.22);
-  txt('LUCAS', 1060, 790, 210, P.yellow, -0.03, 0.2);
+  const g = ctx.createLinearGradient(0, 0, 0, 1440); g.addColorStop(0, '#8fd0ff'); g.addColorStop(1, '#dff3ff');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 2560, 1440);
+  const cream = (x, y, s) => { ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.fillStyle = '#fff3dc'; for (const [ex, ey, rx, ry] of [[0, 0, 80, 46], [-70, 18, 58, 34], [72, 18, 62, 34], [12, -32, 54, 42]]) { ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, 0, 0, 7); ctx.fill(); } ctx.restore(); };
+  cream(330, 260, 1.9); cream(1300, 330, 1.4); cream(2300, 250, 1.5); cream(560, 1000, 1.0); cream(140, 760, 0.9);
+  // soft bushes
+  ctx.fillStyle = '#a8dfae';
+  for (let i = -1; i < 16; i++) { ctx.beginPath(); ctx.ellipse(i * 180, 1300 + (i % 2) * 40, 170, 150, 0, 0, 7); ctx.fill(); }
+  ctx.fillRect(0, 1300, 2560, 200);
+  // Lucas (thumbs up) then the dog in front of his shoulder
+  person({ ...LUQ, x: 1760, y: 1440, s: 1.65, expr: 'grin', armR: 2.5, thumbR: true });
+  drawPin({ x: 1240, y: 1262, s: 1.5, tilt: -0.05 });
+  // title
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '700 150px Fredoka'; ctx.lineWidth = 26; ctx.strokeStyle = '#ffffff'; ctx.lineJoin = 'round';
+  ctx.strokeText('Lições do', 870, 620); ctx.fillStyle = '#1565c0'; ctx.fillText('Lições do', 870, 620);
+  ctx.font = '700 230px Fredoka';
+  ctx.strokeText('Lucas', 870, 800); ctx.fillText('Lucas', 870, 800);
   if (showSafe) { ctx.strokeStyle = 'rgba(255,0,0,0.9)'; ctx.lineWidth = 6; ctx.setLineDash([20, 14]); ctx.strokeRect(507, 508, 1546, 423); ctx.setLineDash([]); }
   return c.toDataURL('image/png');
 }
