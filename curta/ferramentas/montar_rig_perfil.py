@@ -291,17 +291,40 @@ def ela():
     r.parte('cabeca', c, 'tronco', (230, 380), 50)
 
     braco_reg = poly_mask(S.shape, [[136, 388], [258, 388], [266, 508], [150, 518], [130, 450]])
-    ante_reg = poly_mask(S.shape, [[160, 494], [254, 494], [262, 690], [296, 742], [282, 798], [196, 798], [184, 700], [160, 600]])
-    corpo_reg = fig & ~cab & poly_mask(S.shape, [[0, 330], [400, 330], [400, 830], [0, 830]])
-    alvo = corpo_reg | ((braco_reg | ante_reg) & poly_mask(S.shape, [[60, 380], [380, 380], [380, 820], [60, 820]]) & ndimage.binary_fill_holes(fig))
-    conhecido = corpo_reg & ~braco_reg & ~ante_reg
-    rgb = inpaint(S[..., :3], conhecido, alvo)
-    t = S.copy(); t[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
-    t[..., 3] = np.where(alvo, 255, 0); t[..., 3] = np.where(conhecido, S[..., 3], t[..., 3])
-    rr_, gg_ = S[..., 0].astype(int), S[..., 1].astype(int)
-    perna_pelo = (gg_ < 105) & (rr_ > 70)
-    t[..., 3] = np.where((yy > 770) & perna_pelo & ~ndimage.binary_dilation(gg_ > 140, iterations=4), 0, t[..., 3])
-    t[..., 3] = np.where(yy > 830, 0, t[..., 3])
+    ante_reg = poly_mask(S.shape, [[160, 494], [254, 494], [262, 690], [300, 742], [292, 802], [190, 802], [180, 700], [156, 600]])
+    braco_um = ndimage.binary_dilation(braco_reg | ante_reg, iterations=8)
+    rr_, gg_, bb_ = S[..., 0].astype(int), S[..., 1].astype(int), S[..., 2].astype(int)
+    amarelo = (rr_ > 175) & (gg_ > 115) & (bb_ < 120) & (rr_ - bb_ > 90)
+    t = np.zeros_like(S)
+    y0d, y1d = 392, 830
+    for y in range(y0d, y1d):
+        lin_am = amarelo[y] & fig[y] & ~braco_um[y]
+        xs = np.where(lin_am)[0]
+        if len(xs) < 3:
+            continue
+        L, R = xs.min() - 3, xs.max() + 3
+        if y < 790:  # costas do vestido ficam atrás do braço: usa a silhueta inteira
+            fx = np.where(fig[y])[0]
+            if len(fx):
+                L = min(L, fx.min())
+        known = np.where((fig[y] & ~braco_um[y]) & (np.arange(W) >= L) & (np.arange(W) <= R) & (amarelo[y] | (S[y, :, :3].astype(int).sum(-1) < 200)))[0]
+        if len(known) < 2:
+            continue
+        row = S[y].copy()
+        for c in range(3):
+            row[L:R + 1, c] = np.interp(np.arange(L, R + 1), known, S[y, known, c]).astype(np.uint8)
+        keep = (fig[y] & ~braco_um[y])
+        row[keep, :3] = S[y, keep, :3]
+        row[:, 3] = 0
+        row[L:R + 1, 3] = 255
+        t[y] = row
+    # suaviza só o que foi preenchido
+    pre = (t[..., 3] > 0) & ~(fig & ~braco_um)
+    for c in range(3):
+        b_ = ndimage.gaussian_filter(t[..., c].astype(float), 1.5)
+        ch = t[..., c]; ch[pre] = b_[pre].astype(np.uint8); t[..., c] = ch
+    # contorno nas bordas laterais
+    t = contorno(t, 2)
     r.parte('quadril', contorno(t), 'raiz', (235, 570), 30)
     # o "tronco" é o mesmo corpo (vestido inteiro); fica como peça vazia para a hierarquia
     vazio = np.zeros_like(S); vazio[560, 235] = [0, 0, 0, 1]

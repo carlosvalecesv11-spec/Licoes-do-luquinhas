@@ -7,10 +7,11 @@
 window.DURACAO_FILME = 20;
 const SHOTS = [];
 function shot(t0, t1, draw) { SHOTS.push({ t0, t1, draw }); }
-const EH = 560, FH = 465;
+const EH = 560, FH = 480;
 const CHAO = PREDIO.calcada;
-const XE_ESPERA = 640, XE_ABRACO = 905, XF_PORTA = 1320, XF_ABRACO = 988;
 const PASSO_E = 0.74 * EH;                    // distância de um ciclo de 8 quadros
+const XE_ABRACO = 905, XE_ESPERA = XE_ABRACO - PASSO_E, XF_PORTA = 1320, XF_ABRACO = 975;
+const BANCO = { x0: XE_ESPERA - 120, x1: XE_ESPERA + 25, topo: 797 };
 const K = (T, keys) => kf(T, keys, smooth);
 const KE = (T, keys) => kf(T, keys, easeInOut);
 
@@ -21,12 +22,12 @@ function andarEle(T) {
   else { x = KE(T, [[12.25, XE_ESPERA], [14.55, XE_ABRACO]]); d0 = XE_ESPERA; d1 = XE_ABRACO; }
   // fase alinhada para terminar num quadro de pés juntos (q8)
   const total = (d1 - d0) / PASSO_E;
-  const off = 7.4 / 8 - (total % 1);
+  const off = T < 3.2 ? 7.4 / 8 - (total % 1) : 7.4 / 8;
   return { x, fase: (x - d0) / PASSO_E + off };
 }
 // mistura sprite ↔ rig
 function pesoSprite(T) {
-  return K(T, [[0, 1], [2.85, 1], [3.15, 0], [12.15, 0], [12.35, 1], [14.4, 1], [14.65, 0], [20, 0]]);
+  return (T < 3.05 || (T >= 12.25 && T < 14.55)) ? 1 : 0;  // troca direta em pose de pés juntos (sem fantasma)
 }
 
 // ---------------------------------------------------------------- ELE (rig)
@@ -61,10 +62,10 @@ function poseEle(T, x) {
   if (T > 6.7 && T < 7.05) f.blink = 1;
   // ---- sentar (6.9–8.4) e levantar (11.0–12.2)
   const desce = kf(T, [[6.9, 0], [7.15, -0.04], [8.25, 1.03], [8.5, 1.0], [11.25, 1.0], [11.4, 1.0], [12.05, -0.03], [12.25, 0]], easeInOut);
-  const DROP = 285;
+  const DROP = 168;
   if (desce !== 0) {
     addP(p, 'quadril', 'dy', DROP * desce);
-    const frente = clamp(desce) * 115;
+    const frente = clamp(desce) * 168;
     for (const lado of ['N', 'T']) {
       const a = ANK[lado];
       p.pes[lado] = [x + (a[0] - d.cx + frente + (lado === 'T' ? -14 : 0)) * s, CHAO - (d.pes - a[1]) * s];
@@ -72,7 +73,7 @@ function poseEle(T, x) {
     p.ik = Object.assign(p.ik || {}, { peN: 1, peT: 1 });
   }
   // inclinação do tronco: ao descer, sentado, e antecipação ao levantar
-  const incl = 0.32 * Math.sin(seg(T, 6.95, 8.4) * Math.PI) + 0.16 * K(T, [[7.8, 0], [8.3, 1], [11.0, 1], [11.3, 1.9], [11.7, 2.0], [12.1, 0]]);
+  const incl = 0.22 * Math.sin(seg(T, 6.95, 8.4) * Math.PI) + 0.1 * K(T, [[7.8, 0], [8.3, 1], [11.0, 1], [11.3, 3.0], [11.7, 3.2], [12.1, 0]]);
   addP(p, 'tronco', 'rot', incl);
   // mãos nos joelhos
   const apoio = K(T, [[7.4, 0], [8.2, 1], [11.75, 1], [12.0, 0]]);
@@ -145,28 +146,34 @@ function contato(T, E, F) {
   F.p.lean = 0.05 * hug * (0.6 + 0.4 * recosta) - sway;
   addP(E.p, 'tronco', 'rot', 0.06 * beijo);
   addP(E.p, 'cabeca', 'rot', 0.16 * hug - 0.2 * afasta + 0.3 * beijo);
-  addP(F.p, 'cabeca', 'rot', 0.18 * recosta - 0.2 * afasta - 0.24 * beijo);
+  addP(F.p, 'cabeca', 'rot', 0.26 * recosta - 0.2 * afasta - 0.24 * beijo);
+  addP(F.p, 'cabeca', 'dy', 18 * recosta);
   F.p.lean -= 0.03 * beijo;
   // mãos nas costas do outro (o braço da frente passa por cima do corpo do outro)
   const pf = ptsP('f_perfil', Object.assign(poseP({}), F.p, { _M: null }));
   const pm = ptsP('m_perfil', Object.assign(poseP({}), E.p, { _M: null }));
   const mix2 = (a, b, k) => [lerp(a[0], b.x, k), lerp(a[1], b.y, k)];
-  E.p.maos.N = mix2(E.p.maos.N, { x: pf.costas.x - 8, y: pf.costas.y - 30 }, hug);
-  E.p.maos.T = mix2(E.p.maos.T, { x: pf.costas.x - 20, y: pf.costas.y + 10 }, hug);
-  F.p.maos.N = mix2(F.p.maos.N, { x: pm.costas.x + 10, y: pm.costas.y + 10 }, hug);
-  F.p.maos.T = mix2(F.p.maos.T, { x: pm.costas.x + 22, y: pm.costas.y - 20 }, hug);
-  E.p.z.bracoN = 1.92; E.p.z.antebracoN = 1.93; E.p.z.maoN = 1.94;
+  E.p.maos.N = mix2(E.p.maos.N, { x: pf.costas.x + 16, y: pf.costas.y - 14 }, hug);
+  if (hug > 0.5) E.p.maoVar = { N: 'segurando', T: 'aberta' };
+  E.p.maos.T = mix2(E.p.maos.T, { x: pf.costas.x - 30, y: pf.costas.y + 10 }, hug);
+  F.p.maos.N = mix2(F.p.maos.N, { x: pm.costas.x + 14, y: pm.costas.y + 40 }, hug);
+  F.p.maos.T = mix2(F.p.maos.T, { x: pm.costas.x + 30, y: pm.costas.y + 20 }, hug);
+  E.p.z.bracoN = 0.95; E.p.z.antebracoN = 0.96; E.p.z.maoN = 1.97;
+  E.p.z.bracoT = -0.4; E.p.z.antebracoT = -0.39; E.p.z.maoT = -0.38;
   F.p.z.bracoT = -0.3; F.p.z.antebracoT = -0.29;
-  E.p.z.cabeca = 2.2; E.p.z.pescoco = 0.3;
+  E.p.z.cabeca = 1.55;
   // rostos
-  E.f = { blink: 0, fechado: (afasta > 0.5 && beijo < 0.4) ? 0 : 1, boca: beijo > 0.5 ? 'o' : 'sorriso', blush: 0.5, brilho: afasta };
-  F.f = { blink: 0, fechado: afasta > 0.5 ? 0 : 1, boca: afasta > 0.5 ? 'sorriso_aberto' : 'sorriso', blush: 0.6 + 0.3 * beijo, brilho: afasta };
+  E.f = { blink: 0, fechado: (afasta > 0.5 && beijo < 0.4) ? 0 : 1, boca: beijo > 0.5 ? 'o' : 'sorriso', blush: 0.5, brilho: beijo > 0.2 ? 0 : afasta };
+  F.f = { blink: 0, fechado: afasta > 0.5 && beijo < 0.3 ? 0 : 1, boca: afasta > 0.5 && beijo < 0.3 ? 'sorriso_aberto' : 'sorriso', blush: 0.6 + 0.3 * beijo, brilho: beijo > 0.2 ? 0 : afasta };
   // beijo: leva a boca dele até a testa dela (correção fina na cabeça)
   if (beijo > 0) {
-    const pm2 = ptsP('m_perfil', Object.assign(poseP({}), E.p, { _M: null }));
-    const pf2 = ptsP('f_perfil', Object.assign(poseP({}), F.p, { _M: null }));
-    const dx = clamp((pf2.testa.x + 6 - pm2.boca.x) / sE, -40, 40), dy = clamp((pf2.testa.y - 16 - pm2.boca.y) / sE, -40, 40);
-    addP(E.p, 'cabeca', 'dx', dx * beijo); addP(E.p, 'cabeca', 'dy', dy * beijo);
+    // ele recua o corpo até a boca encostar na testa dela (vindo do lado esquerdo)
+    for (let it = 0; it < 2; it++) {
+      const pm2 = ptsP('m_perfil', Object.assign(poseP({}), E.p, { _M: null }));
+      const pf2 = ptsP('f_perfil', Object.assign(poseP({}), F.p, { _M: null }));
+      E.p.x += clamp(pf2.testa.x - 6 - pm2.boca.x, -90, 40) * beijo;
+      if (it === 1) addP(E.p, 'cabeca', 'dy', clamp((pf2.testa.y - 8 - pm2.boca.y) / sE, -50, 50) * beijo);
+    }
   }
   return { hug, kiss: beijo };
 }
@@ -193,6 +200,12 @@ function cena(ctx, T, st) {
   predio(ctx, T + 88, porta, noite);
   predio._dentro = null;
   if (porta > 0) { const [x, y, w, h] = PREDIO.porta; glow(ctx, x + w / 2, y + h, 420, '#ffe6b0', 0.3 * porta); }
+  // banco baixo de pedra na calçada
+  { const b = BANCO, h = CHAO - b.topo;
+    ctx.save(); ctx.globalAlpha *= 0.25; ellipse(ctx, (b.x0 + b.x1) / 2, CHAO + 4, (b.x1 - b.x0) * 0.6, 10, 0, '#000'); ctx.restore();
+    fillRR(ctx, b.x0, b.topo, b.x1 - b.x0, h, 6, '#a9a39b', '#5e5750', 3);
+    fillRR(ctx, b.x0 - 6, b.topo - 8, b.x1 - b.x0 + 12, 14, 5, '#c4beb6', '#5e5750', 3);
+    for (let i = 1; i < 3; i++) line(ctx, b.x0 + (b.x1 - b.x0) * i / 3, b.topo + 10, b.x0 + (b.x1 - b.x0) * i / 3 - 4, CHAO - 4, 'rgba(60,50,40,0.25)', 2); }
   const lista = [];
   const ws = st.ws;
   if (ws < 1) { st.E.p.alpha = 1 - ws; lista.push(['m_perfil', st.E.p]); }
@@ -207,8 +220,7 @@ function cena(ctx, T, st) {
   if (st.c.hug > 0.6 && st.F) floatHearts(ctx, T, 15.4, 17.2, (st.a.x + st.F.p.x) / 2, CHAO - 0.95 * EH, { n: 7, spread: 200, size: 26, seed: 61 });
   if (st.c.kiss > 0.8 && pts.length > 1) {
     const f = pts[pts.length - 1].testa;
-    floatHearts(ctx, T, 18.2, 19.8, f.x, f.y - 30, { n: 6, spread: 110, size: 22, seed: 71 });
-    sparkles(ctx, T, 18.2, 19.3, f.x, f.y, { n: 9, spread: 130, size: 12 });
+    floatHearts(ctx, T, 18.4, 19.8, f.x - 40, f.y - 120, { n: 4, spread: 90, size: 20, seed: 71 });
   }
   return pts;
 }
@@ -229,12 +241,12 @@ function tomada(camFn) {
   };
 }
 const cabecaEle = (st) => ptsP('m_perfil', Object.assign(poseP({}), st.E.p, { _M: null })).olho;
-shot(0, 3.2, tomada(T => [lerp(560, 760, eio(T, 0, 3.2)), 580, 1.05]));
+shot(0, 3.2, tomada(T => [lerp(520, 700, eio(T, 0, 3.2)), 580, 1.05]));
 shot(3.2, 6.3, tomada(T => [XE_ESPERA + 40, CHAO - 0.56 * EH, lerp(1.7, 1.8, seg(T, 3.2, 6.3))]));
 shot(6.3, 9.6, tomada(T => [XE_ESPERA + 90, lerp(650, 670, seg(T, 6.3, 9.6)), 1.35]));
 shot(9.6, 10.45, tomada(T => [1250, 610, 1.4]));
 shot(10.45, 11.1, tomada((T, st) => { const h = cabecaEle(st); return [h.x - 10, h.y + 40, 2.6]; }));
-shot(11.1, 14.75, tomada(T => [lerp(840, 870, seg(T, 11.1, 14.75)), 600, 1.12]));
+shot(11.1, 14.75, tomada(T => [lerp(860, 900, seg(T, 11.1, 14.75)), 610, 1.05]));
 shot(14.75, 17.4, tomada(T => [(XE_ABRACO + XF_ABRACO) / 2, CHAO - 0.6 * EH, lerp(1.75, 1.85, seg(T, 14.75, 17.4))]));
 shot(17.4, 20, tomada(T => [(XE_ABRACO + XF_ABRACO) / 2 + 10, CHAO - 0.78 * EH, lerp(2.45, 2.6, seg(T, 17.4, 20))]));
 

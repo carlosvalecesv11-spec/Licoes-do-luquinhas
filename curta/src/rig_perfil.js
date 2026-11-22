@@ -100,6 +100,7 @@ function opsP(n, pose) {
   const r = RP[n], d = r.d, M = matP(n, pose);
   const ops = [];
   for (const k of r.ordem) {
+    if (window.__esc && n === window.__esc[0] && /^(braco|antebraco|mao)/.test(k) && k.endsWith(window.__esc[1])) continue; // depuração
     const p = d.partes[k];
     const z = (pose.zBase || 0) + (pose.z[k] != null ? pose.z[k] : p.z / 100);
     ops.push({ z, draw: (ctx, base) => {
