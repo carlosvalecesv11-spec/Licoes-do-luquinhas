@@ -217,6 +217,16 @@ function head(p) {
     ctx.fillStyle = '#ffffff'; for (let i = -3; i < 4; i++) ctx.fillRect(i * 60 - 10, 0, 22, 100); ctx.restore();
     shape(null, rr(-112, 2, 224, 96, 44));
   }
+  if (p.chef) {
+    shape('#ffffff', rr(-78, -168, 156, 80, 12));
+    shape('#ffffff', () => { ctx.ellipse(-52, -190, 46, 44, 0, 0, 7); });
+    shape('#ffffff', () => { ctx.ellipse(52, -190, 46, 44, 0, 0, 7); });
+    shape('#ffffff', () => { ctx.ellipse(0, -214, 56, 52, 0, 0, 7); });
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(-72, -196, 144, 40);
+  }
+  if (p.mustache) {
+    shape(p.hairColor || INK, () => { ctx.moveTo(-44, 40); ctx.quadraticCurveTo(-20, 22, 0, 34); ctx.quadraticCurveTo(20, 22, 44, 40); ctx.quadraticCurveTo(20, 52, 0, 42); ctx.quadraticCurveTo(-20, 52, -44, 40); }, 5);
+  }
   if (p.tophat) {
     shape('#2b2b38', ell(0, -92, 128, 22));
     shape('#2b2b38', rr(-72, -250, 144, 160, 10));
