@@ -42,10 +42,10 @@ function draw(showSafe) {
   drawPin({ x: 1190, y: 1262, s: 1.5, tilt: -0.05 });
   // title
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = '700 150px Fredoka'; ctx.lineWidth = 26; ctx.strokeStyle = '#ffffff'; ctx.lineJoin = 'round';
-  ctx.strokeText('Lições do', 870, 620); ctx.fillStyle = '#1565c0'; ctx.fillText('Lições do', 870, 620);
-  ctx.font = '700 230px Fredoka';
-  ctx.strokeText('Lucas', 870, 800); ctx.fillText('Lucas', 870, 800);
+  ctx.font = '700 118px Fredoka'; ctx.lineWidth = 26; ctx.strokeStyle = '#ffffff'; ctx.lineJoin = 'round';
+  ctx.strokeText('Lições do', 900, 712); ctx.fillStyle = '#1565c0'; ctx.fillText('Lições do', 900, 712);
+  ctx.font = '700 200px Fredoka';
+  ctx.strokeText('Lucas', 900, 838); ctx.fillText('Lucas', 900, 838);
   if (showSafe) { ctx.strokeStyle = 'rgba(255,0,0,0.9)'; ctx.lineWidth = 6; ctx.setLineDash([20, 14]); ctx.strokeRect(507, 508, 1546, 423); ctx.setLineDash([]); }
   return c.toDataURL('image/png');
 }
