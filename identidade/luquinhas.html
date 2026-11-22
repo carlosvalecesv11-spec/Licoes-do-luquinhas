@@ -9,7 +9,7 @@ let ctx; const INK = '#26222f'; const LW = 7;
 <script src="common.js"></script>
 <script>
 const P = { yellow: '#ffcc29', sky: '#3aa0ef', deep: '#1d4f91', orange: '#ff6b3d', cream: '#fff8e6', ink: INK };
-const LUQ = { kind: 'kid', skin: '#cf976b', shirt: '#2e2e38', sleeve: '#2e2e38', pants: '#dcc6a4', shorts: true, shoes: '#ffffff', hair: 'wavy', hairColor: '#2a1c16', number: 'L', numberColor: P.yellow };
+const LUQ = { luq: true };
 
 function mk(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; document.body.appendChild(c); ctx = c.getContext('2d'); return c; }
 function rays(cx, cy, w, h, c1, c2, n = 18) {
@@ -86,7 +86,7 @@ function drawAll() {
       ctx.font = '700 40px Fredoka'; ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.fillText(labels[i], cx, y + 510);
     });
     y += 600;
-    p('Camiseta preta com "L", bermuda bege e sorrisão.', 36, '#55506a');
+    p('Camiseta verde, calça jeans, tênis e sorrisão.', 36, '#55506a');
     y += 30;
     H2('CORES');
     const sw = [[P.yellow, 'AMARELO', '#FFCC29'], [P.sky, 'AZUL CÉU', '#3AA0EF'], [P.deep, 'AZUL', '#1D4F91'], [P.orange, 'LARANJA', '#FF6B3D'], [INK, 'CONTORNO', '#26222F']];
