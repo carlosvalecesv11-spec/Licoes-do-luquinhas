@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts/f.css"></head><body>
+<script>let ctx; const INK = '#26222f'; const LW = 7;</script>
+<script src="common.js"></script>
+<script>
+const LUQ = { kind: 'kid', skin: '#cf976b', shirt: '#2e2e38', sleeve: '#2e2e38', pants: '#dcc6a4', shorts: true, shoes: '#ffffff', hair: 'wavy', hairColor: '#2a1c16', number: 'L', numberColor: '#ffcc29' };
+const POSES = {
+  luquinhas_sorrindo: { expr: 'grin' },
+  luquinhas_acenando: { expr: 'grin', armR: 2.05 },
+  luquinhas_chocado: { expr: 'shock', armL: 2.75, armR: 2.75 },
+  luquinhas_falando: { talk: 0.7, armR: 0.6 },
+};
+window.exportAll = () => {
+  const out = {};
+  for (const [k, po] of Object.entries(POSES)) {
+    const c = document.createElement('canvas'); c.width = 900; c.height = 1300; ctx = c.getContext('2d');
+    person({ ...LUQ, ...po, x: 450, y: 1240, s: 1.9, look: 0 });
+    out[k] = c.toDataURL('image/png');
+  }
+  return out;
+};
+window.ready = document.fonts.load('700 70px Fredoka').then(() => true);
+</script></body></html>
